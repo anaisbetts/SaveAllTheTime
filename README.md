@@ -21,3 +21,7 @@ This will go up on the gallery as soon as I'm comfortable with it not breaking.
 For now, install it from here:
 
 [INSTALL](http://cl.ly/3Y3Z120c0M3o/download/SaveAllTheTime.vsix)
+
+## Credits
+
+Thanks to the [Tango Project](http://tango.freedesktop.org/) for the floppy disk icon
