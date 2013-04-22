@@ -16,11 +16,7 @@ That's it. Carry on with your life. Be productive my friends.
 
 ## Installation
 
-This will go up on the gallery as soon as I'm comfortable with it not breaking. 
-
-For now, install it from here:
-
-[INSTALL](http://cl.ly/3Y3Z120c0M3o/download/SaveAllTheTime.vsix)
+Grab it from inside of Visual Studio's Extension Manager, or via the [Extension Gallery link](http://visualstudiogallery.msdn.microsoft.com/ee676c7f-83e8-4ef8-87ab-22a95ae8f1d4)
 
 ## Credits
 
