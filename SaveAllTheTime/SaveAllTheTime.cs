@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -9,6 +10,9 @@ using System.Reactive.Linq;
 using Microsoft.VisualStudio.Text;
 using System.Reactive.Concurrency;
 using System.Windows.Forms;
+using System.Text;
+using Microsoft.VisualStudio.Language.Intellisense;
+using System.ComponentModel.Composition;
 
 namespace SaveAllTheTime
 {
@@ -25,7 +29,7 @@ namespace SaveAllTheTime
         /// Creates a <see cref="SaveAllTheTime"/> for a given <see cref="IWpfTextView"/>.
         /// </summary>
         /// <param name="textView">The <see cref="IWpfTextView"/> to attach the margin to.</param>
-        public SaveAllTheTime(IWpfTextView textView)
+        public SaveAllTheTime(IWpfTextView textView, ICompletionBroker completionBroker)
         {
             _textView = textView;
 
@@ -35,6 +39,7 @@ namespace SaveAllTheTime
 
             _inner = Observable.FromEventPattern<TextContentChangedEventArgs>(x => textView.TextBuffer.Changed += x, x => textView.TextBuffer.Changed -= x)
                 .Throttle(TimeSpan.FromSeconds(2.0), TaskPoolScheduler.Default)
+                .Where(_ => !completionBroker.IsCompletionActive(textView))
                 .Subscribe(_ =>
                     Dispatcher.BeginInvoke(new Action(() => SendKeys.Send("^+S"))));
         }

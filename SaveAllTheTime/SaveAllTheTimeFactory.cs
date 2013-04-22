@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+using Microsoft.VisualStudio.Language.Intellisense;
 
 namespace SaveAllTheTime
 {
@@ -17,9 +18,17 @@ namespace SaveAllTheTime
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
     internal sealed class MarginFactory : IWpfTextViewMarginProvider
     {
+        ICompletionBroker _completionBroker;
+
+        [ImportingConstructor]
+        public MarginFactory(ICompletionBroker completionBroker)
+        {
+            _completionBroker = completionBroker;
+        }
+
         public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
         {
-            return new SaveAllTheTime(textViewHost.TextView);
+            return new SaveAllTheTime(textViewHost.TextView, _completionBroker);
         }
     }
     #endregion
