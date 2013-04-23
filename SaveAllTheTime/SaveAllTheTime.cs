@@ -13,6 +13,7 @@ using System.Windows.Forms;
 using System.Text;
 using Microsoft.VisualStudio.Language.Intellisense;
 using System.ComponentModel.Composition;
+using EnvDTE;
 
 namespace SaveAllTheTime
 {
@@ -22,16 +23,18 @@ namespace SaveAllTheTime
     sealed class SaveAllTheTime : Canvas, IWpfTextViewMargin
     {
         public const string MarginName = "SaveAllTheTime";
-        IWpfTextView _textView;
+        readonly IWpfTextView _textView;
+        readonly DTE _dte;
         IDisposable _inner;
 
         /// <summary>
         /// Creates a <see cref="SaveAllTheTime"/> for a given <see cref="IWpfTextView"/>.
         /// </summary>
         /// <param name="textView">The <see cref="IWpfTextView"/> to attach the margin to.</param>
-        public SaveAllTheTime(IWpfTextView textView, ICompletionBroker completionBroker)
+        public SaveAllTheTime(IWpfTextView textView, ICompletionBroker completionBroker, DTE dte)
         {
             _textView = textView;
+            _dte = dte;
 
             this.Height = 0;
             this.Visibility = Visibility.Collapsed;
@@ -41,40 +44,23 @@ namespace SaveAllTheTime
                 .Throttle(TimeSpan.FromSeconds(2.0), TaskPoolScheduler.Default)
                 .Where(_ => !completionBroker.IsCompletionActive(textView))
                 .Subscribe(_ =>
-                    Dispatcher.BeginInvoke(new Action(() => SendKeys.Send("^+S"))));
+                    Dispatcher.BeginInvoke(new Action(SaveAll)));
         }
 
         /// <summary>
         /// The <see cref="Sytem.Windows.FrameworkElement"/> that implements the visual representation
         /// of the margin.
         /// </summary>
-        public System.Windows.FrameworkElement VisualElement
-        {
-            // Since this margin implements Canvas, this is the object which renders
-            // the margin.
-            get
-            {
-                return this;
-            }
+        public System.Windows.FrameworkElement VisualElement {
+            get { return this; }
         }
 
-        public double MarginSize
-        {
-            // Since this is a horizontal margin, its width will be bound to the width of the text view.
-            // Therefore, its size is its height.
-            get
-            {
-                return 0.0;
-            }
+        public double MarginSize {
+            get { return 0.0; }
         }
 
-        public bool Enabled
-        {
-            // The margin should always be enabled
-            get
-            {
-                return true;
-            }
+        public bool Enabled {
+            get { return true; }
         }
 
         /// <summary>
@@ -92,6 +78,15 @@ namespace SaveAllTheTime
             var disp = Interlocked.Exchange(ref _inner, null);
             if (disp != null) {
                 disp.Dispose();
+            }
+        }
+
+        void SaveAll()
+        {
+            try {
+                _dte.ExecuteCommand("File.SaveAll");
+            } catch (Exception) {
+                // RIP Saving
             }
         }
     }

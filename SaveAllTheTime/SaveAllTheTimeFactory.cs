@@ -2,10 +2,11 @@
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Language.Intellisense;
+using EnvDTE;
+using Microsoft.VisualStudio.Shell;
 
 namespace SaveAllTheTime
 {
-    #region SaveAllTheTime Factory
     /// <summary>
     /// Export a <see cref="IWpfTextViewMarginProvider"/>, which returns an instance of the margin for the editor
     /// to use.
@@ -18,18 +19,19 @@ namespace SaveAllTheTime
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
     internal sealed class MarginFactory : IWpfTextViewMarginProvider
     {
-        ICompletionBroker _completionBroker;
+        readonly ICompletionBroker _completionBroker;
+        readonly DTE _dte;
 
         [ImportingConstructor]
-        public MarginFactory(ICompletionBroker completionBroker)
+        public MarginFactory(ICompletionBroker completionBroker, SVsServiceProvider vsServiceProvider)
         {
             _completionBroker = completionBroker;
+            _dte = (DTE)vsServiceProvider.GetService(typeof(_DTE));
         }
 
         public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
         {
-            return new SaveAllTheTime(textViewHost.TextView, _completionBroker);
+            return new SaveAllTheTime(textViewHost.TextView, _completionBroker, _dte);
         }
     }
-    #endregion
 }
