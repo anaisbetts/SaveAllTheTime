@@ -9,6 +9,7 @@ using System.Reactive.Linq;
 using Microsoft.VisualStudio.Text;
 using System.Reactive.Concurrency;
 using System.Windows.Forms;
+using EnvDTE;
 
 namespace SaveAllTheTime
 {
@@ -18,16 +19,18 @@ namespace SaveAllTheTime
     sealed class SaveAllTheTime : Canvas, IWpfTextViewMargin
     {
         public const string MarginName = "SaveAllTheTime";
-        IWpfTextView _textView;
+        readonly IWpfTextView _textView;
+        readonly DTE _dte;
         IDisposable _inner;
 
         /// <summary>
         /// Creates a <see cref="SaveAllTheTime"/> for a given <see cref="IWpfTextView"/>.
         /// </summary>
         /// <param name="textView">The <see cref="IWpfTextView"/> to attach the margin to.</param>
-        public SaveAllTheTime(IWpfTextView textView)
+        public SaveAllTheTime(IWpfTextView textView, DTE dte)
         {
             _textView = textView;
+            _dte = dte;
 
             this.Height = 0;
             this.Visibility = Visibility.Collapsed;
@@ -87,6 +90,16 @@ namespace SaveAllTheTime
             var disp = Interlocked.Exchange(ref _inner, null);
             if (disp != null) {
                 disp.Dispose();
+            }
+        }
+
+        void SaveAll()
+        {
+            try {
+                _dte.ExecuteCommand("File.SaveAll");
+            }
+            catch (Exception) {
+
             }
         }
     }

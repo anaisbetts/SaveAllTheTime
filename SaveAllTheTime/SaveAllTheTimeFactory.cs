@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+using EnvDTE;
+using Microsoft.VisualStudio.Shell;
 
 namespace SaveAllTheTime
 {
@@ -17,9 +19,17 @@ namespace SaveAllTheTime
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
     internal sealed class MarginFactory : IWpfTextViewMarginProvider
     {
+        readonly DTE _dte;
+
+        [ImportingConstructor]
+        internal MarginFactory(SVsServiceProvider vsServiceProvider)
+        {
+            _dte = (DTE)vsServiceProvider.GetService(typeof(_DTE));
+        }
+
         public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
         {
-            return new SaveAllTheTime(textViewHost.TextView);
+            return new SaveAllTheTime(textViewHost.TextView, _dte);
         }
     }
     #endregion
