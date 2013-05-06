@@ -14,37 +14,38 @@ using System.Text;
 using Microsoft.VisualStudio.Language.Intellisense;
 using System.ComponentModel.Composition;
 using EnvDTE;
+using Microsoft.VisualStudio.TextManager.Interop;
+using SaveAllTheTime.ViewModels;
+using SaveAllTheTime.Views;
 
 namespace SaveAllTheTime
 {
     /// <summary>
     /// A class detailing the margin's visual definition including both size and content.
     /// </summary>
-    sealed class SaveAllTheTime : Canvas, IWpfTextViewMargin
+    sealed class SaveAllTheTime : Border, IWpfTextViewMargin
     {
         public const string MarginName = "SaveAllTheTime";
         readonly IWpfTextView _textView;
         readonly DTE _dte;
         IDisposable _inner;
 
-        /// <summary>
-        /// Creates a <see cref="SaveAllTheTime"/> for a given <see cref="IWpfTextView"/>.
-        /// </summary>
-        /// <param name="textView">The <see cref="IWpfTextView"/> to attach the margin to.</param>
         public SaveAllTheTime(IWpfTextView textView, ICompletionBroker completionBroker, DTE dte)
         {
             _textView = textView;
             _dte = dte;
 
-            this.Height = 0;
-            this.Visibility = Visibility.Collapsed;
-            this.ClipToBounds = true;
+            this.Visibility = Visibility.Visible;
+            this.ClipToBounds = false;
+
+            this.Child = new CommitHintView() { ViewModel = new CommitHintViewModel(getFilePathFromView(textView)) };
+            this.HorizontalAlignment = System.Windows.HorizontalAlignment.Right;
 
             _inner = Observable.FromEventPattern<TextContentChangedEventArgs>(x => textView.TextBuffer.Changed += x, x => textView.TextBuffer.Changed -= x)
                 .Throttle(TimeSpan.FromSeconds(2.0), TaskPoolScheduler.Default)
                 .Where(_ => !completionBroker.IsCompletionActive(textView))
                 .Subscribe(_ =>
-                    Dispatcher.BeginInvoke(new Action(SaveAll)));
+                    Dispatcher.BeginInvoke(new Action(saveAll)));
         }
 
         /// <summary>
@@ -81,7 +82,18 @@ namespace SaveAllTheTime
             }
         }
 
-        void SaveAll()
+        string getFilePathFromView(IWpfTextView textView)
+        {
+            var buffer = textView.TextDataModel.DocumentBuffer;
+            if (!buffer.Properties.ContainsProperty(typeof(ITextDocument))) return null;
+
+            var doc = buffer.Properties[typeof(ITextDocument)] as ITextDocument;
+            if (doc == null) return null;
+
+            return doc.FilePath;
+        }
+
+        void saveAll()
         {
             try {
                 _dte.ExecuteCommand("File.SaveAll");

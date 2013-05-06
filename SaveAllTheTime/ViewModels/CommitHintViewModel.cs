@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 namespace SaveAllTheTime.ViewModels
 {
@@ -26,14 +27,24 @@ namespace SaveAllTheTime.ViewModels
             get { return _ProtocolUrl.Value; }
         }
 
+        Brush _ForegroundBrush = new SolidColorBrush(Color.FromRgb(255, 0, 0));
+        public Brush ForegroundBrush {
+            get { return _ForegroundBrush; }
+            set { this.RaiseAndSetIfChanged(ref _ForegroundBrush, value); }
+        }
+
         public ReactiveCommand Open { get; protected set; }
+
+        static MemoizingMRUCache<string, string> findGitRepoCache = new MemoizingMRUCache<string, string>(
+            (x, _) => findGitRepo(x), 
+            50);
 
         public CommitHintViewModel(string filePath)
         {
             FilePath = filePath;
 
             this.WhenAny(x => x.FilePath, x => x.Value)
-                .Select(findGitRepo)
+                .Select(x => findGitRepoCache.Get(x))
                 .ToProperty(this, x => x.RepoPath, out _RepoPath);
 
             this.WhenAny(x => x.RepoPath, x => x.Value)
@@ -46,16 +57,22 @@ namespace SaveAllTheTime.ViewModels
         
         string protocolUrlForRepoPath(string repoPath)
         {
-            if (isGitHubForWindowsInstalled()) return null;
+            if (!isGitHubForWindowsInstalled()) return null;
 
             var remoteUrl = default(string);
-            using (var repo = new Repository(repoPath)) {
+            var repo = default(Repository);
+
+            try {
+                repo = new Repository(repoPath);
                 var remote = repo.Network.Remotes.FirstOrDefault(x => x.Name.Equals("origin", StringComparison.OrdinalIgnoreCase));
                 if (remote == null) return null;
 
                 remoteUrl = remote.Url.ToLowerInvariant();
+            } catch (Exception ex) {
+                return null;
+            } finally {
+                if (repo != null) repo.Dispose();
             }
-
 
             // Either https://github.com/reactiveui/ReactiveUI.git or
             // git@github.com:reactiveui/ReactiveUI.git
@@ -90,9 +107,14 @@ namespace SaveAllTheTime.ViewModels
             return (isGhfwInstalled = true).Value;
         }
 
-        string findGitRepo(string filePath)
+        static string findGitRepo(string filePath)
         {
-            var di = new DirectoryInfo(Path.GetDirectoryName(filePath));
+            if (String.IsNullOrWhiteSpace(filePath)) return null;
+
+            var fi = new FileInfo(filePath);
+            if (!fi.Exists) return null;
+
+            var di = fi.Directory;
             while (di != null) {
                 if ((new DirectoryInfo(di.FullName + "\\.git")).Exists) {
                     return di.FullName;

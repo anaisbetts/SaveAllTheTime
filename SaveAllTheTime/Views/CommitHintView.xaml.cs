@@ -1,4 +1,5 @@
-﻿using ReactiveUI;
+﻿using System.Reactive.Linq;
+using ReactiveUI;
 using SaveAllTheTime.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Diagnostics;
 
 namespace SaveAllTheTime.Views
 {
@@ -25,6 +27,15 @@ namespace SaveAllTheTime.Views
         public CommitHintView()
         {
             InitializeComponent();
+
+            this.WhenAnyObservable(x => x.ViewModel.Open.CanExecuteObservable)
+                .BindTo(this, x => x.Open.Visibility);
+
+            this.OneWayBind(ViewModel, x => x.ForegroundBrush, x => x.Open.Foreground);
+            this.BindCommand(ViewModel, x => x.Open, x => x.Open);
+
+            this.WhenAnyObservable(x => x.ViewModel.Open)
+                .Subscribe(x => Process.Start(ViewModel.ProtocolUrl));
         }
 
         public CommitHintViewModel ViewModel {
