@@ -3,8 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
+             mc:Ignorable="d">
 	<UserControl.Resources>
 		<Style x:Key="FocusVisual">
 			<Setter Property="Control.Template">
@@ -65,17 +64,20 @@
 			</Setter>
 		</Style>
 	</UserControl.Resources>
-    <Grid>
-        <Button x:Name="Open" HorizontalAlignment="Left" VerticalAlignment="Top" Style="{DynamicResource NoChromeButton}">
-            <Viewbox Stretch="Uniform" Width="22">
-              <Canvas Width="11" Height="7">
-                <Path Fill="Red">
-                  <Path.Data>
-                      <PathGeometry Figures="m 10.498 3.007 v 1.5 h -2.736 c -0.164 0.547 -0.478 0.996 -0.94 1.348 -0.462 0.352 -0.987 0.527 -1.573 0.527 -0.586 0 -1.11 -0.176 -1.573 -0.527 -0.463 -0.351 -0.776 -0.801 -0.94 -1.348 h -2.736 v -1.5 h 2.736 c 0.164 -0.547 0.478 -0.996 0.94 -1.348 0.462 -0.352 0.987 -0.527 1.573 -0.527 0.586 0 1.11 0.176 1.573 0.527 0.463 0.351 0.776 0.801 0.94 1.348 h 2.736 z m -6.311 1.811 c 0.293 0.293 0.646 0.439 1.061 0.439 0.415 0 0.768 -0.146 1.061 -0.439 0.293 -0.293 0.439 -0.646 0.439 -1.061 0 -0.415 -0.146 -0.768 -0.439 -1.061 -0.293 -0.293 -0.646 -0.439 -1.061 -0.439 -0.415 0 -0.768 0.146 -1.061 0.439 -0.293 0.293 -0.439 0.646 -0.439 1.061 0 0.415 0.146 0.768 0.439 1.061 z" FillRule="NonZero"/>
-                  </Path.Data>
-                </Path>
-              </Canvas>
-            </Viewbox>
-        </Button>
-    </Grid>
+
+    <Border Padding="0,0,48,32">
+        <Border Background="#22888888" CornerRadius="6" Width="40" Height="40">
+            <Button x:Name="Open" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{DynamicResource NoChromeButton}">
+                <Viewbox Stretch="Uniform" Width="22">
+                  <Canvas Width="11" Height="7">
+                    <Path Fill="Red">
+                      <Path.Data>
+                          <PathGeometry Figures="m 10.498 3.007 v 1.5 h -2.736 c -0.164 0.547 -0.478 0.996 -0.94 1.348 -0.462 0.352 -0.987 0.527 -1.573 0.527 -0.586 0 -1.11 -0.176 -1.573 -0.527 -0.463 -0.351 -0.776 -0.801 -0.94 -1.348 h -2.736 v -1.5 h 2.736 c 0.164 -0.547 0.478 -0.996 0.94 -1.348 0.462 -0.352 0.987 -0.527 1.573 -0.527 0.586 0 1.11 0.176 1.573 0.527 0.463 0.351 0.776 0.801 0.94 1.348 h 2.736 z m -6.311 1.811 c 0.293 0.293 0.646 0.439 1.061 0.439 0.415 0 0.768 -0.146 1.061 -0.439 0.293 -0.293 0.439 -0.646 0.439 -1.061 0 -0.415 -0.146 -0.768 -0.439 -1.061 -0.293 -0.293 -0.646 -0.439 -1.061 -0.439 -0.415 0 -0.768 0.146 -1.061 0.439 -0.293 0.293 -0.439 0.646 -0.439 1.061 0 0.415 0.146 0.768 0.439 1.061 z" FillRule="NonZero"/>
+                      </Path.Data>
+                    </Path>
+                  </Canvas>
+                </Viewbox>
+            </Button>
+        </Border>
+    </Border>
 </UserControl>
