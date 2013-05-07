@@ -63,11 +63,13 @@ namespace SaveAllTheTime
 
             disp.Add(Disposable.Create(() => _adornmentLayer.RemoveAllAdornments()));
 
-
             disp.Add(Observable.FromEventPattern<TextContentChangedEventArgs>(x => _view.TextBuffer.Changed += x, x => _view.TextBuffer.Changed -= x)
                 .Throttle(TimeSpan.FromSeconds(2.0), TaskPoolScheduler.Default)
                 .Where(_ => !completionBroker.IsCompletionActive(_view))
                 .Subscribe(_ => commitControl.Dispatcher.BeginInvoke(new Action(saveAll))));
+
+            disp.Add(Observable.FromEventPattern<EventHandler, EventArgs>(x => _view.Closed += x, x => _view.Closed -= x)
+                .Subscribe(_ => Dispose()));
 
             _inner = disp;
         }
