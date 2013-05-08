@@ -52,7 +52,7 @@ namespace SaveAllTheTime.ViewModels
                 .Select(_gitRepoOps.ProtocolUrlForRepoPath)
                 .ToProperty(this, x => x.ProtocolUrl, out _ProtocolUrl);
 
-            Open = new ReactiveCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
+            Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
         }
     }
 }
