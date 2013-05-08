@@ -54,5 +54,43 @@ namespace SaveAllTheTime.Tests.Models
                 }
             });
         }
+
+        [Fact]
+        public void LiveFSWInstancesShouldBeOnePerDirectory()
+        {
+            var fixture = new FilesystemWatchCache();
+            Assert.Equal(0, FilesystemWatchCache.liveFileSystemWatcherCount);
+
+            var dir1 = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            var dir2 = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            var dir3 = Path.GetTempPath();
+
+            var disp1 = fixture.Register(dir1).Subscribe();
+            var disp2 = fixture.Register(dir2).Subscribe();
+            var disp3 = fixture.Register(dir3).Subscribe();
+
+            Assert.Equal(3, FilesystemWatchCache.liveFileSystemWatcherCount);
+
+            // dir1 already subscribed == connect to existing fsw
+            var disp4 = fixture.Register(dir1).Subscribe();
+            Assert.Equal(3, FilesystemWatchCache.liveFileSystemWatcherCount);
+
+            // Refcount on dir1 still 1 because of disp4
+            disp1.Dispose();
+            disp2.Dispose();
+            disp3.Dispose();
+            Assert.Equal(1, FilesystemWatchCache.liveFileSystemWatcherCount);
+
+            // Refcount drops to zero on dir1
+            disp4.Dispose();
+            Assert.Equal(0, FilesystemWatchCache.liveFileSystemWatcherCount);
+
+            // Attempt to resurrect an existing observable
+            disp1 = fixture.Register(dir1).Subscribe();
+            Assert.Equal(1, FilesystemWatchCache.liveFileSystemWatcherCount);
+
+            disp1.Dispose();
+            Assert.Equal(0, FilesystemWatchCache.liveFileSystemWatcherCount);
+        }
     }
 }

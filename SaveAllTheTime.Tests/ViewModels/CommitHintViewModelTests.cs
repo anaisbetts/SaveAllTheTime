@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Extensions;
+using System.Reactive.Disposables;
 
 namespace SaveAllTheTime.Tests.ViewModels
 {
@@ -51,6 +52,32 @@ namespace SaveAllTheTime.Tests.ViewModels
 
             this.Log().Info("Protocol URL: {0}", fixture.ProtocolUrl);
             Assert.False(fixture.Open.CanExecute(null));
+        }
+
+        [Fact]
+        public void MakeSureWeDisposeFileSystemWatcher()
+        {
+            var ops = Substitute.For<IGitRepoOps>();
+            var filename = @"C:\Foo\Bar\Baz.txt";
+
+            ops.FindGitRepo(filename).Returns(@"C:\Foo");
+            ops.ProtocolUrlForRepoPath(@"C:\Foo").Returns(default(string));
+
+            var subscriptionCount = 0;
+            var countingObs = Observable.Create<string>(subj => {
+                subscriptionCount++;
+                return Disposable.Create(() => subscriptionCount--);
+            });
+
+            var watch = Substitute.For<IFilesystemWatchCache>();
+            watch.Register(null).ReturnsForAnyArgs(countingObs);
+            Assert.Equal(0, subscriptionCount);
+
+            var fixture = new CommitHintViewModel(filename, ops, watch);
+            Assert.Equal(1, subscriptionCount);
+
+            fixture.Dispose();
+            Assert.Equal(0, subscriptionCount);
         }
     }
 

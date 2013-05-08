@@ -14,6 +14,8 @@ namespace SaveAllTheTime.Models
 
     public class FilesystemWatchCache : IFilesystemWatchCache
     {
+        static internal int liveFileSystemWatcherCount = 0;
+
         MemoizingMRUCache<Tuple<string, string>, IObservable<string>> watchCache = new MemoizingMRUCache<Tuple<string, string>, IObservable<string>>((pair, _) => {
             return Observable.Create<string>(subj => {
                 var disp = new CompositeDisposable();
@@ -38,6 +40,10 @@ namespace SaveAllTheTime.Models
                     .Subscribe(subj));
 
                 fsw.EnableRaisingEvents = true;
+
+                liveFileSystemWatcherCount++;
+                disp.Add(Disposable.Create(() => liveFileSystemWatcherCount--));
+
                 return disp;
             }).Publish().RefCount();
         }, 25);
