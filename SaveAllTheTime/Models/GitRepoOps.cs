@@ -61,7 +61,19 @@ namespace SaveAllTheTime.Models
 
         public DateTimeOffset? LastCommitTime(string repoPath)
         {
-            throw new NotImplementedException();
+            var repo = default(Repository);
+            try {
+                repo = new Repository(repoPath);
+                if (repo.Head == null || repo.Head.Tip == null) return null;
+
+                return repo.Head.Tip.Author.When;
+            } catch (Exception ex) {
+                this.Log().WarnException("Couldn't read commit time on repo: " + repoPath, ex);
+            } finally {
+                if (repo != null) repo.Dispose();
+            }
+
+            return null;
         }
 
         internal static string protocolUrlForRemoteUrl(string remoteUrl)
