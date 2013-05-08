@@ -11,13 +11,15 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using SaveAllTheTime.Models;
+using System.Threading;
 
 namespace SaveAllTheTime.ViewModels
 {
-    public class CommitHintViewModel : ReactiveObject
+    public class CommitHintViewModel : ReactiveObject, IDisposable
     {
         static readonly IFilesystemWatchCache _defaultWatchCache = new FilesystemWatchCache();
         readonly IGitRepoOps _gitRepoOps;
+        IDisposable _inner;
 
         public string FilePath { get; protected set; }
 
@@ -70,6 +72,17 @@ namespace SaveAllTheTime.ViewModels
                 .ToProperty(this, x => x.LastRepoCommitTime, out _LastRepoCommitTime);
 
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
+
+            // NB: Because _LastRepoCommitTime at the end of the day creates a
+            // FileSystemWatcher, we have to dispose it or else we'll get FSW 
+            // messages for evar.
+            _inner = _LastRepoCommitTime;
+        }
+
+        public void Dispose()
+        {
+            var disp = Interlocked.Exchange(ref _inner, null);
+            if (disp != null) disp.Dispose();
         }
     }
 }

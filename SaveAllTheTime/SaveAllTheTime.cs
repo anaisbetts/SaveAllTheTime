@@ -71,6 +71,8 @@ namespace SaveAllTheTime
             disp.Add(Observable.FromEventPattern<EventHandler, EventArgs>(x => _view.Closed += x, x => _view.Closed -= x)
                 .Subscribe(_ => Dispose()));
 
+            disp.Add(commitControl.ViewModel);
+
             _inner = disp;
         }
 
