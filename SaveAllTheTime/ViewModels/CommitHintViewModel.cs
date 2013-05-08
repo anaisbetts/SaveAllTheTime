@@ -16,6 +16,7 @@ namespace SaveAllTheTime.ViewModels
 {
     public class CommitHintViewModel : ReactiveObject
     {
+        static readonly IFilesystemWatchCache _defaultWatchCache = new FilesystemWatchCache();
         readonly IGitRepoOps _gitRepoOps;
 
         public string FilePath { get; protected set; }
@@ -30,6 +31,11 @@ namespace SaveAllTheTime.ViewModels
             get { return _ProtocolUrl.Value; }
         }
 
+        ObservableAsPropertyHelper<DateTimeOffset> _LastRepoCommitTime;
+        public DateTimeOffset LastRepoCommitTime {
+            get { return _LastRepoCommitTime.Value; }
+        }
+
         Brush _ForegroundBrush = new SolidColorBrush(Color.FromRgb(255, 0, 0));
         public Brush ForegroundBrush {
             get { return _ForegroundBrush; }
@@ -38,9 +44,10 @@ namespace SaveAllTheTime.ViewModels
 
         public ReactiveCommand Open { get; protected set; }
 
-        public CommitHintViewModel(string filePath, IGitRepoOps gitRepoOps = null)
+        public CommitHintViewModel(string filePath, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
         {
             FilePath = filePath;
+            watchCache = watchCache ?? _defaultWatchCache;
             _gitRepoOps = gitRepoOps ?? new GitRepoOps();
 
             this.WhenAny(x => x.FilePath, x => x.Value)
@@ -51,6 +58,16 @@ namespace SaveAllTheTime.ViewModels
                 .Where(x => !String.IsNullOrWhiteSpace(x))
                 .Select(_gitRepoOps.ProtocolUrlForRepoPath)
                 .ToProperty(this, x => x.ProtocolUrl, out _ProtocolUrl);
+
+            var repoWatch = this.WhenAny(x => x.RepoPath, x => x.Value)
+                .Select(x => watchCache.Register(x).Select(_ => x))
+                .Switch();
+            
+            repoWatch
+                .Select(x => _gitRepoOps.LastCommitTime(x))
+                .Select(x => x == null ? _gitRepoOps.ApplicationStartTime :
+                    (_gitRepoOps.ApplicationStartTime > x.Value ? _gitRepoOps.ApplicationStartTime : x.Value))
+                .ToProperty(this, x => x.LastRepoCommitTime, out _LastRepoCommitTime);
 
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
         }

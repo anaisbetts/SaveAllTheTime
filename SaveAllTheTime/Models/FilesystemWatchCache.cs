@@ -3,10 +3,11 @@ using System.IO;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using ReactiveUI;
+using System.Diagnostics;
 
 namespace SaveAllTheTime.Models
 {
-    interface IFilesystemWatchCache
+    public interface IFilesystemWatchCache
     {
         IObservable<string> Register(string directory, string filter = null);
     }
@@ -21,6 +22,8 @@ namespace SaveAllTheTime.Models
                     new FileSystemWatcher(pair.Item1, pair.Item2) : 
                     new FileSystemWatcher(pair.Item1);
 
+                fsw.NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
+
                 disp.Add(fsw);
 
                 var allEvents = Observable.Merge(
@@ -28,8 +31,9 @@ namespace SaveAllTheTime.Models
                     Observable.FromEventPattern<FileSystemEventHandler, FileSystemEventArgs>(x => fsw.Created += x, x => fsw.Created -= x),
                     Observable.FromEventPattern<FileSystemEventHandler, FileSystemEventArgs>(x => fsw.Deleted += x, x => fsw.Deleted -= x));
 
-                disp.Add(allEvents.Throttle(TimeSpan.FromMilliseconds(250), RxApp.TaskpoolScheduler)
-                    .Select(x => x.EventArgs.FullPath)
+                disp.Add(allEvents
+                    .Throttle(TimeSpan.FromMilliseconds(250), RxApp.TaskpoolScheduler)
+                    .Select(x => x.EventArgs.Name)
                     .Synchronize(subj)
                     .Subscribe(subj));
 
