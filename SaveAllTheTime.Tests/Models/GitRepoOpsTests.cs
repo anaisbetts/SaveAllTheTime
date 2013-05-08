@@ -22,7 +22,7 @@ namespace SaveAllTheTime.Tests.Models
         [InlineData("git://github.com/github/Akavache.git", false)]
         public void ProtocolUrlCheck(string remoteUrl, bool shouldNotBeNull)
         {
-            var result = GitRepoOps.ProtocolUrlForRemoteUrl(remoteUrl);
+            var result = GitRepoOps.protocolUrlForRemoteUrl(remoteUrl);
             this.Log().Info("Protocol URL: {0}", result);
 
             Assert.Equal(shouldNotBeNull, !String.IsNullOrEmpty(result));

@@ -10,12 +10,25 @@ namespace SaveAllTheTime.Models
 {
     public interface IGitRepoOps
     {
+        DateTimeOffset ApplicationStartTime { get; }
+
         string ProtocolUrlForRepoPath(string repoPath);
         string FindGitRepo(string filePath);
+        DateTimeOffset? LastCommitTime(string repoPath);
     }
 
     public class GitRepoOps : IGitRepoOps, IEnableLogger
     {
+        static GitRepoOps()
+        {
+            _ApplicationStartTime = RxApp.DeferredScheduler.Now;
+        }
+
+        readonly static DateTimeOffset _ApplicationStartTime;
+        public DateTimeOffset ApplicationStartTime {
+            get { return _ApplicationStartTime; }
+        }
+
         public string ProtocolUrlForRepoPath(string repoPath)
         {
             if (!isGitHubForWindowsInstalled()) return null;
@@ -35,10 +48,22 @@ namespace SaveAllTheTime.Models
                 if (repo != null) repo.Dispose();
             }
 
-            return ProtocolUrlForRemoteUrl(remoteUrl);
+            return protocolUrlForRemoteUrl(remoteUrl);
         }
 
-        internal static string ProtocolUrlForRemoteUrl(string remoteUrl)
+        public string FindGitRepo(string filePath)
+        {
+            lock (findGitRepoCache) {
+                return findGitRepoCache.Get(filePath);
+            }
+        }
+
+        public DateTimeOffset? LastCommitTime(string repoPath)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static string protocolUrlForRemoteUrl(string remoteUrl)
         {
             // Either https://github.com/reactiveui/ReactiveUI.git or
             // git@github.com:reactiveui/ReactiveUI.git
@@ -56,13 +81,6 @@ namespace SaveAllTheTime.Models
 
             nwo = (new Regex(".git$")).Replace(nwo, "");
             return String.Format("github-windows://openRepo/https://github.com/{0}", nwo);
-        }
-
-        public string FindGitRepo(string filePath)
-        {
-            lock (findGitRepoCache) {
-                return findGitRepoCache.Get(filePath);
-            }
         }
 
         static MemoizingMRUCache<string, string> findGitRepoCache = new MemoizingMRUCache<string, string>(
