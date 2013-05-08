@@ -19,9 +19,9 @@ namespace SaveAllTheTime.Tests.Models
         [InlineData("https://notagithuburl.com", false)]
         [InlineData("https://notagithuburl.com", false)]
         [InlineData("git@bitbucket.org:birkenfeld/pygments-main", false)]
+        [InlineData("git://github.com/github/Akavache.git", false)]
         [InlineData("git@github.com:reactiveui/ReactiveUI.git", true)]
         [InlineData("https://github.com/github/Akavache.git", true)]
-        [InlineData("git://github.com/github/Akavache.git", false)]
         public void ProtocolUrlCheck(string remoteUrl, bool shouldNotBeNull)
         {
             var result = GitRepoOps.protocolUrlForRemoteUrl(remoteUrl);
