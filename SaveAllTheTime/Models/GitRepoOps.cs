@@ -6,7 +6,7 @@ using Microsoft.Win32;
 using ReactiveUI;
 using System;
 
-namespace SaveAllTheTime.ViewModels
+namespace SaveAllTheTime.Models
 {
     public interface IGitRepoOps
     {
@@ -35,6 +35,11 @@ namespace SaveAllTheTime.ViewModels
                 if (repo != null) repo.Dispose();
             }
 
+            return ProtocolUrlForRemoteUrl(remoteUrl);
+        }
+
+        internal static string ProtocolUrlForRemoteUrl(string remoteUrl)
+        {
             // Either https://github.com/reactiveui/ReactiveUI.git or
             // git@github.com:reactiveui/ReactiveUI.git
 
@@ -48,7 +53,7 @@ namespace SaveAllTheTime.ViewModels
             if (nwo == null) {
                 return null;
             }
-                
+
             nwo = (new Regex(".git$")).Replace(nwo, "");
             return String.Format("github-windows://openRepo/https://github.com/{0}", nwo);
         }

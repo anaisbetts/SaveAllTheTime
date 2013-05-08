@@ -111,7 +111,7 @@
     <Compile Include="SaveAllTheTimeFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ViewModels\CommitHintViewModel.cs" />
-    <Compile Include="ViewModels\GitRepoOps.cs" />
+    <Compile Include="Models\GitRepoOps.cs" />
     <Compile Include="Views\CommitHintView.xaml.cs">
       <DependentUpon>CommitHintView.xaml</DependentUpon>
     </Compile>
@@ -137,9 +137,7 @@
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Models\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Page Include="Views\CommitHintView.xaml">
       <SubType>Designer</SubType>

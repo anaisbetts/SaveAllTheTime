@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Media;
+using SaveAllTheTime.Models;
 
 namespace SaveAllTheTime.ViewModels
 {
