@@ -1,4 +1,5 @@
-﻿using NSubstitute;
+﻿using System.Reactive.Linq;
+using NSubstitute;
 using ReactiveUI;
 using SaveAllTheTime.Models;
 using SaveAllTheTime.ViewModels;
@@ -24,8 +25,11 @@ namespace SaveAllTheTime.Tests.ViewModels
 
             ops.FindGitRepo(filename).Returns(default(string));
 
+            var watch = Substitute.For<IFilesystemWatchCache>();
+            watch.Register(null).ReturnsForAnyArgs(Observable.Never<string>());
+
             RxApp.InUnitTestRunner();
-            var fixture = new CommitHintViewModel(filename, ops);
+            var fixture = new CommitHintViewModel(filename, ops, watch);
 
             this.Log().Info("Protocol URL: {0}", fixture.ProtocolUrl);
             Assert.False(fixture.Open.CanExecute(null));
@@ -40,7 +44,10 @@ namespace SaveAllTheTime.Tests.ViewModels
             ops.FindGitRepo(filename).Returns(@"C:\Foo");
             ops.ProtocolUrlForRepoPath(@"C:\Foo").Returns(default(string));
 
-            var fixture = new CommitHintViewModel(filename, ops);
+            var watch = Substitute.For<IFilesystemWatchCache>();
+            watch.Register(null).ReturnsForAnyArgs(Observable.Never<string>());
+
+            var fixture = new CommitHintViewModel(filename, ops, watch);
 
             this.Log().Info("Protocol URL: {0}", fixture.ProtocolUrl);
             Assert.False(fixture.Open.CanExecute(null));
