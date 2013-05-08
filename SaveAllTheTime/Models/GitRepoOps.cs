@@ -43,6 +43,7 @@ namespace SaveAllTheTime.Models
 
                 remoteUrl = remote.Url.ToLowerInvariant();
             } catch (Exception ex) {
+                this.Log().WarnException("Failed to open repo: " + repoPath, ex);
                 return null;
             } finally {
                 if (repo != null) repo.Dispose();
@@ -114,7 +115,8 @@ namespace SaveAllTheTime.Models
             try {
                 var hkcu = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Default);
                 hkcu.OpenSubKey("github-windows", RegistryKeyPermissionCheck.ReadSubTree);
-            } catch (Exception) {
+            } catch (Exception ex) {
+                this.Log().WarnException("Couldn't detect if GH4W is installed, bailing", ex);
                 return (isGhfwInstalled = false).Value;
             }
 
