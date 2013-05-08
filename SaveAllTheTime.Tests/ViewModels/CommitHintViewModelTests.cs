@@ -4,6 +4,7 @@ using SaveAllTheTime.Models;
 using SaveAllTheTime.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Text;
@@ -43,6 +44,19 @@ namespace SaveAllTheTime.Tests.ViewModels
 
             this.Log().Info("Protocol URL: {0}", fixture.ProtocolUrl);
             Assert.False(fixture.Open.CanExecute(null));
+        }
+    }
+
+    public class CommitHintViewModelSlowTests : IEnableLogger
+    {
+        [Fact]
+        public void CanOpenThisRepo()
+        {
+            var st = new StackTrace(0, true);
+            var filename = st.GetFrame(0).GetFileName();
+
+            var fixture = new CommitHintViewModel(filename);
+            Assert.True(fixture.Open.CanExecute(null));
         }
     }
 }
