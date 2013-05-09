@@ -19,40 +19,38 @@ namespace SaveAllTheTime.Tests.Models
         [Fact]
         public void FilesystemWatchCacheSmokeTest()
         {
-            (new TestScheduler()).With(sched => {
-                var targetDir = Path.GetTempPath();
-                var targetFile = Path.Combine(targetDir, Guid.NewGuid() + "__" + Guid.NewGuid());
-                var fixture = (new FilesystemWatchCache()).Register(targetDir);
+            var targetDir = Path.GetTempPath();
+            var targetFile = Path.Combine(targetDir, Guid.NewGuid() + "__" + Guid.NewGuid());
+            var fixture = (new FilesystemWatchCache()).Register(targetDir);
 
-                var output = fixture.CreateCollection();
-                File.WriteAllText(targetFile, "Foo");
-                File.Delete(targetFile);
+            var output = fixture.CreateCollection();
+            File.WriteAllText(targetFile, "Foo");
+            File.Delete(targetFile);
 
-                // FilesystemWatchCache should debounce FS notifications
-                Assert.Equal(0, output.Count);
+            // FilesystemWatchCache should debounce FS notifications
+            Assert.Equal(0, output.Count);
 
-                sched.AdvanceByMs(100);
-                Assert.Equal(0, output.Count);
+            // I hate this so bad.
+            Observable.Timer(TimeSpan.FromMilliseconds(300)).Wait();
 
-                // Debounce interval currently at 250ms
-                sched.AdvanceByMs(250);
-                Assert.NotEqual(0, output.Count);
-                Assert.True(output.Contains(targetFile));
+            // Debounce interval currently at 250ms
+            Assert.Equal(1, output.Count);
+            Assert.True(output.Contains(targetFile));
 
-                // FilesystemWatchCache shouldn't be watching after we disconnect
-                var currentCount = output.Count;
-                output.Dispose();
+            // FilesystemWatchCache shouldn't be watching after we disconnect
+            var currentCount = output.Count;
+            output.Dispose();
 
-                File.WriteAllText(targetFile, "Foo");
-                File.Delete(targetFile);
+            File.WriteAllText(targetFile, "Foo");
+            File.Delete(targetFile);
 
-                sched.AdvanceByMs(10000);
-                Assert.Equal(currentCount, output.Count);
+            // I hate this so bad.
+            Observable.Timer(TimeSpan.FromMilliseconds(500)).Wait();
+            Assert.Equal(currentCount, output.Count);
 
-                foreach (var v in output) {
-                    this.Log().Info(v);
-                }
-            });
+            foreach (var v in output) {
+                this.Log().Info(v);
+            }
         }
 
         [Fact]

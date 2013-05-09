@@ -35,7 +35,7 @@ namespace SaveAllTheTime.Models
 
                 disp.Add(allEvents
                     .Throttle(TimeSpan.FromMilliseconds(250), RxApp.TaskpoolScheduler)
-                    .Select(x => x.EventArgs.Name)
+                    .Select(x => x.EventArgs.FullPath)
                     .Synchronize(subj)
                     .Subscribe(subj));
 
