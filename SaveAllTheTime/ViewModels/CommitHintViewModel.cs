@@ -70,6 +70,7 @@ namespace SaveAllTheTime.ViewModels
                 .ToProperty(this, x => x.ProtocolUrl, out _ProtocolUrl);
 
             var repoWatch = this.WhenAny(x => x.RepoPath, x => x.Value)
+                .Where(x => !String.IsNullOrWhiteSpace(x))
                 .Select(x => watchCache.Register(x).Select(_ => x))
                 .Switch();
             
