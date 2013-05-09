@@ -61,6 +61,7 @@ namespace SaveAllTheTime.ViewModels
             _gitRepoOps = gitRepoOps ?? new GitRepoOps();
 
             this.WhenAny(x => x.FilePath, x => x.Value)
+                .Where(x => !String.IsNullOrWhiteSpace(x))
                 .Select(_gitRepoOps.FindGitRepo)
                 .ToProperty(this, x => x.RepoPath, out _RepoPath);
 

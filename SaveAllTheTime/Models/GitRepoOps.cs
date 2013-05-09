@@ -54,6 +54,8 @@ namespace SaveAllTheTime.Models
 
         public string FindGitRepo(string filePath)
         {
+            if (filePath == null) return null;
+
             lock (findGitRepoCache) {
                 return findGitRepoCache.Get(filePath);
             }
