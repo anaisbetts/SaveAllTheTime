@@ -30,7 +30,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             watch.Register(null).ReturnsForAnyArgs(Observable.Never<string>());
 
             RxApp.InUnitTestRunner();
-            var fixture = new CommitHintViewModel(filename, ops, watch);
+            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
 
             this.Log().Info("Protocol URL: {0}", fixture.ProtocolUrl);
             Assert.False(fixture.Open.CanExecute(null));
@@ -48,10 +48,30 @@ namespace SaveAllTheTime.Tests.ViewModels
             var watch = Substitute.For<IFilesystemWatchCache>();
             watch.Register(null).ReturnsForAnyArgs(Observable.Never<string>());
 
-            var fixture = new CommitHintViewModel(filename, ops, watch);
+            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
 
             this.Log().Info("Protocol URL: {0}", fixture.ProtocolUrl);
             Assert.False(fixture.Open.CanExecute(null));
+        }
+
+        [Fact]
+        public void SavesWhenYouClickTheButton()
+        {
+            var ops = Substitute.For<IGitRepoOps>();
+            var filename = @"C:\Foo\Bar\Baz.txt";
+
+            ops.FindGitRepo(filename).Returns(@"C:\Foo");
+            ops.ProtocolUrlForRepoPath(@"C:\Foo").Returns("https://github.com/reactiveui/reactiveui.git");
+
+            var watch = Substitute.For<IFilesystemWatchCache>();
+            watch.Register(null).ReturnsForAnyArgs(Observable.Never<string>());
+
+            var vs = Substitute.For<IVisualStudioOps>();
+            var fixture = new CommitHintViewModel(filename, vs, ops, watch);
+            Assert.True(fixture.Open.CanExecute(null));
+
+            fixture.Open.Execute(null);
+            vs.Received(1).SaveAll();
         }
 
         [Fact]
@@ -73,7 +93,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             watch.Register(null).ReturnsForAnyArgs(countingObs);
             Assert.Equal(0, subscriptionCount);
 
-            var fixture = new CommitHintViewModel(filename, ops, watch);
+            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
             Assert.Equal(1, subscriptionCount);
 
             fixture.Dispose();
@@ -89,7 +109,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             var st = new StackTrace(0, true);
             var filename = st.GetFrame(0).GetFileName();
 
-            var fixture = new CommitHintViewModel(filename);
+            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>());
             Assert.True(fixture.Open.CanExecute(null));
         }
     }

@@ -54,7 +54,7 @@ namespace SaveAllTheTime.ViewModels
 
         public ReactiveCommand Open { get; protected set; }
 
-        public CommitHintViewModel(string filePath, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
+        public CommitHintViewModel(string filePath, IVisualStudioOps vsOps, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
         {
             FilePath = filePath;
             watchCache = watchCache ?? _defaultWatchCache;
@@ -86,6 +86,7 @@ namespace SaveAllTheTime.ViewModels
                 .ToProperty(this, x => x.HintState, out _HintState);
 
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
+            Open.Subscribe(_ => vsOps.SaveAll());
 
             // NB: Because _LastRepoCommitTime at the end of the day creates a
             // FileSystemWatcher, we have to dispose it or else we'll get FSW 

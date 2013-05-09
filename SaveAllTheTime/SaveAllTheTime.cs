@@ -22,10 +22,15 @@ using System.Reactive.Disposables;
 
 namespace SaveAllTheTime
 {
+    public interface IVisualStudioOps
+    {
+        void SaveAll();
+    }
+
     /// <summary>
     /// Adornment class that draws a square box in the top right hand corner of the viewport
     /// </summary>
-    sealed class SaveAllTheTimeAdornment : IDisposable
+    sealed class SaveAllTheTimeAdornment : IDisposable, IVisualStudioOps
     {
         readonly IWpfTextView _view;
         readonly IAdornmentLayer _adornmentLayer;
@@ -43,7 +48,10 @@ namespace SaveAllTheTime
             _view = view;
             _adornmentLayer = view.GetAdornmentLayer("SaveAllTheTimeAdornment");
 
-            var commitControl = new CommitHintView() { ViewModel = new CommitHintViewModel(getFilePathFromView(_view)) };
+            var commitControl = new CommitHintView() { 
+                ViewModel = new CommitHintViewModel(getFilePathFromView(_view), this),
+            };
+
             var disp = new CompositeDisposable();
 
             var sizeChanged = Observable.Merge(
@@ -66,7 +74,7 @@ namespace SaveAllTheTime
             disp.Add(Observable.FromEventPattern<TextContentChangedEventArgs>(x => _view.TextBuffer.Changed += x, x => _view.TextBuffer.Changed -= x)
                 .Throttle(TimeSpan.FromSeconds(2.0), TaskPoolScheduler.Default)
                 .Where(_ => !completionBroker.IsCompletionActive(_view))
-                .Subscribe(_ => commitControl.Dispatcher.BeginInvoke(new Action(saveAll))));
+                .Subscribe(_ => commitControl.Dispatcher.BeginInvoke(new Action(SaveAll))));
 
             disp.Add(Observable.FromEventPattern<EventHandler, EventArgs>(x => _view.Closed += x, x => _view.Closed -= x)
                 .Subscribe(_ => Dispose()));
@@ -95,7 +103,7 @@ namespace SaveAllTheTime
             return doc.FilePath;
         }
 
-        void saveAll()
+        public void SaveAll()
         {
             try {
                 _dte.ExecuteCommand("File.SaveAll");
