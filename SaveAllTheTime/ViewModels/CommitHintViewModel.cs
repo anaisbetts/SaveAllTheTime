@@ -13,6 +13,8 @@ using System.Windows.Media;
 using SaveAllTheTime.Models;
 using System.Threading;
 using System.Reactive.Disposables;
+using System.Reactive;
+using System.Diagnostics;
 
 namespace SaveAllTheTime.ViewModels
 {
@@ -47,12 +49,23 @@ namespace SaveAllTheTime.ViewModels
             get { return _LastRepoCommitTime.Value; }
         }
 
+        ObservableAsPropertyHelper<DateTimeOffset> _LastTextActiveTime;
+        public DateTimeOffset LastTextActiveTime {
+            get { return _LastTextActiveTime.Value; }
+        }
+
         ObservableAsPropertyHelper<CommitHintState> _HintState;
         public CommitHintState HintState {
             get { return _HintState.Value; }
         }
 
         public ReactiveCommand Open { get; protected set; }
+
+        static CommitHintViewModel()
+        {
+            // NB: This is a bug in ReactiveUI :-/
+            MessageBus.Current = new MessageBus();
+        }
 
         public CommitHintViewModel(string filePath, IVisualStudioOps vsOps, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
         {
@@ -74,12 +87,18 @@ namespace SaveAllTheTime.ViewModels
                 .Where(x => !String.IsNullOrWhiteSpace(x))
                 .Select(x => watchCache.Register(x).Select(_ => x))
                 .Switch();
-            
+
             repoWatch
                 .Select(x => _gitRepoOps.LastCommitTime(x))
-                .Select(x => x == null ? _gitRepoOps.ApplicationStartTime :
-                    (_gitRepoOps.ApplicationStartTime > x.Value ? _gitRepoOps.ApplicationStartTime : x.Value))
+                .Select(x => x == null ? _gitRepoOps.ApplicationStartTime : x.Value)
                 .ToProperty(this, x => x.LastRepoCommitTime, out _LastRepoCommitTime);
+
+            MessageBus.Current.Listen<Unit>("AnyDocumentChanged")
+                .Timestamp(RxApp.MainThreadScheduler)
+                .Select(x => x.Timestamp)
+                .StartWith(_gitRepoOps.ApplicationStartTime)
+                .Do(x => Debug.WriteLine(String.Format("Last Change: {0}", x)))
+                .ToProperty(this, x => x.LastTextActiveTime, out _LastTextActiveTime);
 
             // TODO
             Observable.Return(CommitHintState.Green)
@@ -91,7 +110,7 @@ namespace SaveAllTheTime.ViewModels
             // NB: Because _LastRepoCommitTime at the end of the day creates a
             // FileSystemWatcher, we have to dispose it or else we'll get FSW 
             // messages for evar.
-            _inner = _LastRepoCommitTime;
+            _inner = new CompositeDisposable(_LastRepoCommitTime, _LastTextActiveTime);
         }
 
         public void Dispose()

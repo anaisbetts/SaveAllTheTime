@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Language.Intellisense;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
+using ReactiveUI;
 
 namespace SaveAllTheTime
 {
