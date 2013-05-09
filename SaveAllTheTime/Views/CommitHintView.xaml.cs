@@ -33,7 +33,7 @@ namespace SaveAllTheTime.Views
                 .BindTo(this, x => x.Open.Visibility);
 
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
-                .Subscribe(x => VisualStateManager.GoToElementState(this, x, true));
+                .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
 
             this.BindCommand(ViewModel, x => x.Open, x => x.Open);
 

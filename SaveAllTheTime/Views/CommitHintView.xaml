@@ -65,7 +65,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Padding="0,0,48,32">
+    <Border Padding="0,0,48,32" x:Name="visualRoot">
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="HintStateGroup">
                 <VisualStateGroup.Transitions>

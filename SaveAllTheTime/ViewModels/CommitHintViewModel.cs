@@ -80,6 +80,10 @@ namespace SaveAllTheTime.ViewModels
                     (_gitRepoOps.ApplicationStartTime > x.Value ? _gitRepoOps.ApplicationStartTime : x.Value))
                 .ToProperty(this, x => x.LastRepoCommitTime, out _LastRepoCommitTime);
 
+            // TODO
+            Observable.Return(CommitHintState.Green)
+                .ToProperty(this, x => x.HintState, out _HintState);
+
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
 
             // NB: Because _LastRepoCommitTime at the end of the day creates a
