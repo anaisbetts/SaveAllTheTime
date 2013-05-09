@@ -21,7 +21,7 @@ namespace SaveAllTheTime.Models
     {
         static GitRepoOps()
         {
-            _ApplicationStartTime = RxApp.DeferredScheduler.Now;
+            _ApplicationStartTime = RxApp.MainThreadScheduler.Now;
         }
 
         readonly static DateTimeOffset _ApplicationStartTime;
