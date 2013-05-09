@@ -12,9 +12,18 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using SaveAllTheTime.Models;
 using System.Threading;
+using System.Reactive.Disposables;
 
 namespace SaveAllTheTime.ViewModels
 {
+    public enum CommitHintState {
+        Loading,
+        Green,
+        Yellow,
+        Red,
+        Error,
+    };
+
     public class CommitHintViewModel : ReactiveObject, IDisposable
     {
         static readonly IFilesystemWatchCache _defaultWatchCache = new FilesystemWatchCache();
@@ -38,10 +47,9 @@ namespace SaveAllTheTime.ViewModels
             get { return _LastRepoCommitTime.Value; }
         }
 
-        Brush _ForegroundBrush = new SolidColorBrush(Color.FromRgb(255, 0, 0));
-        public Brush ForegroundBrush {
-            get { return _ForegroundBrush; }
-            set { this.RaiseAndSetIfChanged(ref _ForegroundBrush, value); }
+        ObservableAsPropertyHelper<CommitHintState> _HintState;
+        public CommitHintState HintState {
+            get { return _HintState.Value; }
         }
 
         public ReactiveCommand Open { get; protected set; }

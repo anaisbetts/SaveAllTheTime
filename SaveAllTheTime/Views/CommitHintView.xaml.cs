@@ -32,7 +32,9 @@ namespace SaveAllTheTime.Views
             this.WhenAnyObservable(x => x.ViewModel.Open.CanExecuteObservable)
                 .BindTo(this, x => x.Open.Visibility);
 
-            this.OneWayBind(ViewModel, x => x.ForegroundBrush, x => x.Open.Foreground);
+            this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
+                .Subscribe(x => VisualStateManager.GoToElementState(this, x, true));
+
             this.BindCommand(ViewModel, x => x.Open, x => x.Open);
 
             this.WhenAnyObservable(x => x.ViewModel.Open)
