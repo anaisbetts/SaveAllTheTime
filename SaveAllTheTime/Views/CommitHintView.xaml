@@ -4,79 +4,84 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d">
-	<UserControl.Resources>
-		<Style x:Key="FocusVisual">
-			<Setter Property="Control.Template">
-				<Setter.Value>
-					<ControlTemplate>
-						<Rectangle Margin="0" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
-					</ControlTemplate>
-				</Setter.Value>
-			</Setter>
-		</Style>
-		<SolidColorBrush x:Key="Button.Static.Background" Color="#FFDDDDDD"/>
-		<SolidColorBrush x:Key="Button.Static.Border" Color="#FF707070"/>
-		<SolidColorBrush x:Key="Button.MouseOver.Background" Color="#FFBEE6FD"/>
-		<SolidColorBrush x:Key="Button.MouseOver.Border" Color="#FF3C7FB1"/>
-		<SolidColorBrush x:Key="Button.Pressed.Background" Color="#FFC4E5F6"/>
-		<SolidColorBrush x:Key="Button.Pressed.Border" Color="#FF2C628B"/>
-		<SolidColorBrush x:Key="Button.Disabled.Background" Color="#FFF4F4F4"/>
-		<SolidColorBrush x:Key="Button.Disabled.Border" Color="#FFADB2B5"/>
-		<SolidColorBrush x:Key="Button.Disabled.Foreground" Color="#FF838383"/>
-		<Style x:Key="NoChromeButton" TargetType="{x:Type Button}">
-			<Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
-			<Setter Property="Background" Value="{StaticResource Button.Static.Background}"/>
-			<Setter Property="BorderBrush" Value="{StaticResource Button.Static.Border}"/>
-			<Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
-			<Setter Property="BorderThickness" Value="0"/>
-			<Setter Property="HorizontalContentAlignment" Value="Center"/>
-			<Setter Property="VerticalContentAlignment" Value="Center"/>
-			<Setter Property="Padding" Value="0"/>
-			<Setter Property="Template">
-				<Setter.Value>
-					<ControlTemplate TargetType="{x:Type Button}">
-						<ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="0" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
-							<VisualStateManager.VisualStateGroups>
-								<VisualStateGroup x:Name="CommonStates">
-									<VisualState x:Name="MouseOver"/>
-									<VisualState x:Name="Pressed"/>
-									<VisualState x:Name="Disabled"/>
-								</VisualStateGroup>
-								<VisualStateGroup x:Name="FocusStates">
-									<VisualState x:Name="Focused"/>
-								</VisualStateGroup>
-								<VisualStateGroup x:Name="ValidationStates">
-									<VisualState x:Name="InvalidFocused"/>
-									<VisualState x:Name="InvalidUnfocused"/>
-								</VisualStateGroup>
-							</VisualStateManager.VisualStateGroups>
-						</ContentPresenter>
-						<ControlTemplate.Triggers>
-							<Trigger Property="IsDefaulted" Value="true"/>
-							<Trigger Property="IsMouseOver" Value="true"/>
-							<Trigger Property="IsPressed" Value="true"/>
-							<Trigger Property="IsEnabled" Value="false">
-								<Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
-							</Trigger>
-						</ControlTemplate.Triggers>
-					</ControlTemplate>
-				</Setter.Value>
-			</Setter>
-		</Style>
-	</UserControl.Resources>
+    <UserControl.Resources>
+        <Style x:Key="FocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle Margin="0" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <SolidColorBrush x:Key="Button.Static.Background" Color="#FFDDDDDD"/>
+        <SolidColorBrush x:Key="Button.Static.Border" Color="#FF707070"/>
+        <SolidColorBrush x:Key="Button.MouseOver.Background" Color="#FFBEE6FD"/>
+        <SolidColorBrush x:Key="Button.MouseOver.Border" Color="#FF3C7FB1"/>
+        <SolidColorBrush x:Key="Button.Pressed.Background" Color="#FFC4E5F6"/>
+        <SolidColorBrush x:Key="Button.Pressed.Border" Color="#FF2C628B"/>
+        <SolidColorBrush x:Key="Button.Disabled.Background" Color="#FFF4F4F4"/>
+        <SolidColorBrush x:Key="Button.Disabled.Border" Color="#FFADB2B5"/>
+        <SolidColorBrush x:Key="Button.Disabled.Foreground" Color="#FF838383"/>
+        <Style x:Key="NoChromeButton" TargetType="{x:Type Button}">
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+            <Setter Property="Background" Value="{StaticResource Button.Static.Background}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Button.Static.Border}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="0" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="MouseOver"/>
+                                    <VisualState x:Name="Pressed"/>
+                                    <VisualState x:Name="Disabled"/>
+                                </VisualStateGroup>
+                                <VisualStateGroup x:Name="FocusStates">
+                                    <VisualState x:Name="Focused"/>
+                                </VisualStateGroup>
+                                <VisualStateGroup x:Name="ValidationStates">
+                                    <VisualState x:Name="InvalidFocused"/>
+                                    <VisualState x:Name="InvalidUnfocused"/>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                        </ContentPresenter>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsDefaulted" Value="true"/>
+                            <Trigger Property="IsMouseOver" Value="true"/>
+                            <Trigger Property="IsPressed" Value="true"/>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
 
     <Border Padding="0,0,48,32">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="HintStateGroup"/>
+        </VisualStateManager.VisualStateGroups>
         <Border Background="#22888888" CornerRadius="6" Width="40" Height="40">
-            <Button x:Name="Open" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{DynamicResource NoChromeButton}">
-                <Viewbox Stretch="Uniform" Width="22">
-                  <Canvas Width="11" Height="7">
-                    <Path Fill="Red">
-                      <Path.Data>
-                          <PathGeometry Figures="m 10.498 3.007 v 1.5 h -2.736 c -0.164 0.547 -0.478 0.996 -0.94 1.348 -0.462 0.352 -0.987 0.527 -1.573 0.527 -0.586 0 -1.11 -0.176 -1.573 -0.527 -0.463 -0.351 -0.776 -0.801 -0.94 -1.348 h -2.736 v -1.5 h 2.736 c 0.164 -0.547 0.478 -0.996 0.94 -1.348 0.462 -0.352 0.987 -0.527 1.573 -0.527 0.586 0 1.11 0.176 1.573 0.527 0.463 0.351 0.776 0.801 0.94 1.348 h 2.736 z m -6.311 1.811 c 0.293 0.293 0.646 0.439 1.061 0.439 0.415 0 0.768 -0.146 1.061 -0.439 0.293 -0.293 0.439 -0.646 0.439 -1.061 0 -0.415 -0.146 -0.768 -0.439 -1.061 -0.293 -0.293 -0.646 -0.439 -1.061 -0.439 -0.415 0 -0.768 0.146 -1.061 0.439 -0.293 0.293 -0.439 0.646 -0.439 1.061 0 0.415 0.146 0.768 0.439 1.061 z" FillRule="NonZero"/>
-                      </Path.Data>
-                    </Path>
-                  </Canvas>
-                </Viewbox>
+            <Button x:Name="Open" Style="{DynamicResource NoChromeButton}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <Border Background="#01000000">
+                    <Viewbox Stretch="Uniform" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Canvas Width="11" Height="7">
+                            <Path Fill="Red">
+                                <Path.Data>
+                                    <PathGeometry Figures="m 10.498 3.007 v 1.5 h -2.736 c -0.164 0.547 -0.478 0.996 -0.94 1.348 -0.462 0.352 -0.987 0.527 -1.573 0.527 -0.586 0 -1.11 -0.176 -1.573 -0.527 -0.463 -0.351 -0.776 -0.801 -0.94 -1.348 h -2.736 v -1.5 h 2.736 c 0.164 -0.547 0.478 -0.996 0.94 -1.348 0.462 -0.352 0.987 -0.527 1.573 -0.527 0.586 0 1.11 0.176 1.573 0.527 0.463 0.351 0.776 0.801 0.94 1.348 h 2.736 z m -6.311 1.811 c 0.293 0.293 0.646 0.439 1.061 0.439 0.415 0 0.768 -0.146 1.061 -0.439 0.293 -0.293 0.439 -0.646 0.439 -1.061 0 -0.415 -0.146 -0.768 -0.439 -1.061 -0.293 -0.293 -0.646 -0.439 -1.061 -0.439 -0.415 0 -0.768 0.146 -1.061 0.439 -0.293 0.293 -0.439 0.646 -0.439 1.061 0 0.415 0.146 0.768 0.439 1.061 z" FillRule="NonZero"/>
+                                </Path.Data>
+                            </Path>
+                        </Canvas>
+                    </Viewbox>
+                </Border>
             </Button>
         </Border>
     </Border>
