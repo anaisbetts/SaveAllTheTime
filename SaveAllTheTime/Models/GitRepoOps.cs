@@ -15,7 +15,7 @@ namespace SaveAllTheTime.Models
 
         string ProtocolUrlForRepoPath(string repoPath);
         string FindGitRepo(string filePath);
-        DateTimeOffset? LastCommitTime(string repoPath);
+        IObservable<DateTimeOffset> LastCommitTime(string repoPath);
         IObservable<RepositoryStatus> GetStatus(string repoPath);
     }
 
@@ -63,23 +63,24 @@ namespace SaveAllTheTime.Models
             }
         }
 
-        public DateTimeOffset? LastCommitTime(string repoPath)
+        public IObservable<DateTimeOffset> LastCommitTime(string repoPath)
         {
-            var repo = default(Repository);
-            try {
-                repo = new Repository(repoPath);
-                if (repo.Head == null || repo.Head.Tip == null) {
-                    return null;
+            return Observable.Start(() => {
+                var repo = default(Repository);
+                try {
+                    repo = new Repository(repoPath);
+                    if (repo.Head == null || repo.Head.Tip == null) {
+                        throw new Exception("Couldn't find commit");
+                    }
+
+                    return repo.Head.Tip.Author.When;
+                } catch (Exception ex) {
+                    this.Log().WarnException("Couldn't read commit time on repo: " + repoPath, ex);
+                    throw;
+                } finally {
+                    if (repo != null) repo.Dispose();
                 }
-
-                return repo.Head.Tip.Author.When;
-            } catch (Exception ex) {
-                this.Log().WarnException("Couldn't read commit time on repo: " + repoPath, ex);
-            } finally {
-                if (repo != null) repo.Dispose();
-            }
-
-            return null;
+            }, RxApp.TaskpoolScheduler);
         }
 
         public IObservable<RepositoryStatus> GetStatus(string repoPath)

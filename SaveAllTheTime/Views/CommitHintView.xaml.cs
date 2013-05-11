@@ -51,6 +51,11 @@ namespace SaveAllTheTime.Views
             this.WhenAny(x => x.IsMouseOver, x => x.Value ? "Hover" : "NoHover")
                 .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
 
+            this.WhenAnyObservable(
+                    x => x.ViewModel.RefreshLastCommitTime.ThrownExceptions,
+                    x => x.ViewModel.RefreshStatus.ThrownExceptions)
+                .Subscribe(_ => VisualStateManager.GoToElementState(visualRoot, "Error", true));
+
             /* Uncomment this and the XAML section if you want to test the
              * transitions over time
             this.Bind(ViewModel, x => x.MinutesTimeOverride, x => x.MinutesTimeOverride.Value);

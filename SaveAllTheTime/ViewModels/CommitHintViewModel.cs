@@ -78,6 +78,7 @@ namespace SaveAllTheTime.ViewModels
 
         public ReactiveCommand Open { get; protected set; }
         public ReactiveAsyncCommand RefreshStatus { get; protected set; }
+        public ReactiveAsyncCommand RefreshLastCommitTime { get; protected set; }
 
         static CommitHintViewModel()
         {
@@ -101,17 +102,17 @@ namespace SaveAllTheTime.ViewModels
                 .Select(_gitRepoOps.ProtocolUrlForRepoPath)
                 .ToProperty(this, x => x.ProtocolUrl, out _ProtocolUrl);
 
-            var repoWatch = this.WhenAny(x => x.RepoPath, x => x.Value)
-                .Where(x => !String.IsNullOrWhiteSpace(x))
-                .Select(x => watchCache.Register(Path.Combine(x, ".git", "refs")).Select(_ => x))
-                .Switch();
-
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
             RefreshStatus = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
+            RefreshLastCommitTime = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
 
-            repoWatch
-                .Select(x => _gitRepoOps.LastCommitTime(x))
-                .Select(x => x == null ? _gitRepoOps.ApplicationStartTime : x.Value)
+            var repoWatchSub = this.WhenAny(x => x.RepoPath, x => x.Value)
+                .Where(x => !String.IsNullOrWhiteSpace(x))
+                .Select(x => watchCache.Register(Path.Combine(x, ".git", "refs")).Select(_ => x))
+                .Switch()
+                .InvokeCommand(RefreshLastCommitTime);
+
+            RefreshLastCommitTime.RegisterAsyncObservable(_ => _gitRepoOps.LastCommitTime(RepoPath))
                 .StartWith(_gitRepoOps.ApplicationStartTime)
                 .ToProperty(this, x => x.LastRepoCommitTime, out _LastRepoCommitTime);
 
@@ -122,7 +123,8 @@ namespace SaveAllTheTime.ViewModels
                 .ToProperty(this, x => x.LastTextActiveTime, out _LastTextActiveTime);
 
             var refreshDisp = this.WhenAny(x => x.LastTextActiveTime, x => Unit.Default)
-                .Buffer(TimeSpan.FromSeconds(5), RxApp.MainThreadScheduler)
+                .Buffer(TimeSpan.FromSeconds(5), RxApp.TaskpoolScheduler)
+                .ObserveOn(RxApp.MainThreadScheduler)
                 .InvokeCommand(RefreshStatus);
 
             this.WhenAny(x => x.LastRepoCommitTime, x => x.LastTextActiveTime, x => x.MinutesTimeOverride, (commit, active, _) => active.Value - commit.Value)
@@ -156,7 +158,7 @@ namespace SaveAllTheTime.ViewModels
             // NB: Because _LastRepoCommitTime at the end of the day creates a
             // FileSystemWatcher, we have to dispose it or else we'll get FSW 
             // messages for evar.
-            _inner = new CompositeDisposable(_LastRepoCommitTime, _LastTextActiveTime);
+            _inner = new CompositeDisposable(repoWatchSub, _LastRepoCommitTime, _LastTextActiveTime);
         }
 
         public double LastCommitTimeToOpacity(TimeSpan timeSinceLastCommit)
