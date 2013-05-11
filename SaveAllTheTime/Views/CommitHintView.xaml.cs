@@ -48,6 +48,9 @@ namespace SaveAllTheTime.Views
                 .Select(x => x + 0.25)
                 .BindTo(this, x => x.visualRoot.Opacity);
 
+            this.WhenAny(x => x.IsMouseOver, x => x.Value ? "Hover" : "NoHover")
+                .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
+
             /* Uncomment this and the XAML section if you want to test the
              * transitions over time
             this.Bind(ViewModel, x => x.MinutesTimeOverride, x => x.MinutesTimeOverride.Value);

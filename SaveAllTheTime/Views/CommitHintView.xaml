@@ -137,11 +137,63 @@
                     </Storyboard>
                 </VisualState>
             </VisualStateGroup>
+            <VisualStateGroup x:Name="MouseHoverStateGroup">
+            	<VisualStateGroup.Transitions>
+            		<VisualTransition GeneratedDuration="0:0:0.3">
+            			<VisualTransition.GeneratedEasingFunction>
+            				<PowerEase EasingMode="EaseInOut" Power="3"/>
+            			</VisualTransition.GeneratedEasingFunction>
+            		</VisualTransition>
+            	</VisualStateGroup.Transitions>
+            	<VisualState x:Name="NoHover"/>
+            	<VisualState x:Name="Hover">
+            		<Storyboard>
+            			<DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.X)" Storyboard.TargetName="viewbox1">
+            				<EasingDoubleKeyFrame KeyTime="0" Value="1"/>
+            			</DoubleAnimationUsingKeyFrames>
+            			<DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.Y)" Storyboard.TargetName="viewbox1">
+            				<EasingDoubleKeyFrame KeyTime="0" Value="3"/>
+            			</DoubleAnimationUsingKeyFrames>
+            			<DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.Opacity)" Storyboard.TargetName="viewbox1">
+            				<EasingDoubleKeyFrame KeyTime="0" Value="0.82"/>
+            			</DoubleAnimationUsingKeyFrames>
+            		</Storyboard>
+            	</VisualState>
+            </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
         <Border Background="#22888888" Margin="0,0,48,32" CornerRadius="6" Width="40" Height="40" Cursor="Hand" ForceCursor="True">
             <Button x:Name="Open" Style="{DynamicResource NoChromeButton}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Background="#01000000">
+                    <Viewbox x:Name="viewbox1" Stretch="Uniform" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" Opacity="0">
+                    	<Viewbox.RenderTransform>
+                    		<TransformGroup>
+                    			<ScaleTransform/>
+                    			<SkewTransform/>
+                    			<RotateTransform/>
+                    			<TranslateTransform/>
+                    		</TransformGroup>
+                    	</Viewbox.RenderTransform>
+                    	<Viewbox.Effect>
+                    		<BlurEffect Radius="8"/>
+                    	</Viewbox.Effect>
+                    	<Canvas Width="11" Height="7">
+                    		<Path Fill="#FF464646" RenderTransformOrigin="0.5,0.5">
+                    			<Path.RenderTransform>
+                    				<TransformGroup>
+                    					<ScaleTransform/>
+                    					<SkewTransform/>
+                    					<RotateTransform/>
+                    					<TranslateTransform/>
+                    				</TransformGroup>
+                    			</Path.RenderTransform>
+                    			<Path.Data>
+                    				<PathGeometry Figures="m 10.498 3.007 v 1.5 h -2.736 c -0.164 0.547 -0.478 0.996 -0.94 1.348 -0.462 0.352 -0.987 0.527 -1.573 0.527 -0.586 0 -1.11 -0.176 -1.573 -0.527 -0.463 -0.351 -0.776 -0.801 -0.94 -1.348 h -2.736 v -1.5 h 2.736 c 0.164 -0.547 0.478 -0.996 0.94 -1.348 0.462 -0.352 0.987 -0.527 1.573 -0.527 0.586 0 1.11 0.176 1.573 0.527 0.463 0.351 0.776 0.801 0.94 1.348 h 2.736 z m -6.311 1.811 c 0.293 0.293 0.646 0.439 1.061 0.439 0.415 0 0.768 -0.146 1.061 -0.439 0.293 -0.293 0.439 -0.646 0.439 -1.061 0 -0.415 -0.146 -0.768 -0.439 -1.061 -0.293 -0.293 -0.646 -0.439 -1.061 -0.439 -0.415 0 -0.768 0.146 -1.061 0.439 -0.293 0.293 -0.439 0.646 -0.439 1.061 0 0.415 0.146 0.768 0.439 1.061 z" FillRule="NonZero"/>
+                    			</Path.Data>
+                    		</Path>
+                    	</Canvas>
+                    </Viewbox>
+
                     <Viewbox x:Name="viewbox" Stretch="Uniform" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                     	<Viewbox.RenderTransform>
                     		<TransformGroup>
