@@ -5,6 +5,10 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using ReactiveUI;
+using NLog.Layouts;
+using NLog.Config;
+using NLog.Targets;
+using System.Diagnostics;
 
 namespace SaveAllTheTime
 {
@@ -43,6 +47,38 @@ namespace SaveAllTheTime
         public void TextViewCreated(IWpfTextView textView)
         {
             new SaveAllTheTimeAdornment(textView, _completionBroker, _dte);
+        }
+    }
+
+    // NB: This class name is Magical, don't change it. Fody looks for it and
+    // writes in a .NET Module Initializer
+    public static class ModuleInitializer
+    {
+        public static void Initialize()
+        {
+#if DEBUG
+            const bool inDebug = true;
+#else 
+            const bool inDebug = false;
+#endif
+
+            if (RxApp.InUnitTestRunner() || inDebug) {
+                configureDebugLogger();
+            }
+        }
+
+        static void configureDebugLogger()
+        {
+            var debugTarget = new DebuggerTarget() {
+                Name = "debug",
+                Layout = new SimpleLayout(@"${longdate} - ${level:uppercase=true}: ${message}${onexception:${newline}EXCEPTION\: ${exception:format=ToString}}"),
+            };
+
+            var debugRule = new LoggingRule("*", NLog.LogLevel.Debug, debugTarget);
+            NLog.LogManager.Configuration.AddTarget("debug", debugTarget);
+            NLog.LogManager.Configuration.LoggingRules.Add(debugRule);
+
+            NLog.LogManager.ReconfigExistingLoggers();
         }
     }
 }
