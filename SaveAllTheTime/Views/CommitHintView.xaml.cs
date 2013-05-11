@@ -35,6 +35,10 @@ namespace SaveAllTheTime.Views
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
                 .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
 
+            this.WhenAnyObservable(x => x.ViewModel.RefreshStatus.ItemsInflight)
+                .Select(x => x != 0 ? "Loading" : "NotLoading")
+                .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
+
             this.BindCommand(ViewModel, x => x.Open, x => x.Open);
 
             this.WhenAnyObservable(x => x.ViewModel.Open)

@@ -21,7 +21,6 @@ using System.Reactive.Subjects;
 namespace SaveAllTheTime.ViewModels
 {
     public enum CommitHintState {
-        Loading,
         Green,
         Yellow,
         Red,
@@ -140,15 +139,6 @@ namespace SaveAllTheTime.ViewModels
 
             RefreshStatus.RegisterAsyncObservable(_ => _gitRepoOps.GetStatus(RepoPath))
                 .ToProperty(this, x => x.LatestRepoStatus, out _LatestRepoStatus);
-
-            var previousState = HintState;
-            RefreshStatus.ItemsInflight
-                .Select(x => {
-                    if (x == 0) return previousState;
-                    previousState = HintState;
-                    return CommitHintState.Loading;
-                })
-                .Subscribe(hintState);
 
             // NB: Because _LastRepoCommitTime at the end of the day creates a
             // FileSystemWatcher, we have to dispose it or else we'll get FSW 

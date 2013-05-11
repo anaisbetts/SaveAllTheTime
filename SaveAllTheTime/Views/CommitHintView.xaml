@@ -69,24 +69,12 @@
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="HintStateGroup">
                 <VisualStateGroup.Transitions>
-                    <VisualTransition From="Loading" GeneratedDuration="0:0:0.7">
-                        <VisualTransition.GeneratedEasingFunction>
-                            <BackEase EasingMode="EaseInOut" Amplitude="2"/>
-                        </VisualTransition.GeneratedEasingFunction>
-                    </VisualTransition>
                     <VisualTransition GeneratedDuration="0:0:0.3">
                         <VisualTransition.GeneratedEasingFunction>
                             <PowerEase EasingMode="EaseInOut" Power="3"/>
                         </VisualTransition.GeneratedEasingFunction>
                     </VisualTransition>
                 </VisualStateGroup.Transitions>
-                <VisualState x:Name="Loading">
-                    <Storyboard>
-                        <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)" Storyboard.TargetName="path">
-                            <EasingDoubleKeyFrame KeyTime="0" Value="90"/>
-                        </DoubleAnimationUsingKeyFrames>
-                    </Storyboard>
-                </VisualState>
                 <VisualState x:Name="Green">
                     <Storyboard>
                         <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="path">
@@ -108,6 +96,23 @@
                         </ColorAnimationUsingKeyFrames>
                     </Storyboard>
                 </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup x:Name="LoadingStateGroup">
+            	<VisualStateGroup.Transitions>
+            		<VisualTransition GeneratedDuration="0:0:0.7">
+            			<VisualTransition.GeneratedEasingFunction>
+            				<BackEase EasingMode="EaseInOut" Amplitude="2"/>
+            			</VisualTransition.GeneratedEasingFunction>
+            		</VisualTransition>
+            	</VisualStateGroup.Transitions>
+            	<VisualState x:Name="NotLoading"/>
+            	<VisualState x:Name="Loading">
+            		<Storyboard>
+            			<DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)" Storyboard.TargetName="viewbox">
+            				<EasingDoubleKeyFrame KeyTime="0" Value="90"/>
+            			</DoubleAnimationUsingKeyFrames>
+            		</Storyboard>
+            	</VisualState>
                 <VisualState x:Name="Error">
                     <Storyboard>
                         <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.Opacity)" Storyboard.TargetName="viewbox">
@@ -138,7 +143,15 @@
         <Border Background="#22888888" CornerRadius="6" Width="40" Height="40" x:Name="RootVisual">
             <Button x:Name="Open" Style="{DynamicResource NoChromeButton}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Background="#01000000">
-                    <Viewbox x:Name="viewbox" Stretch="Uniform" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Viewbox x:Name="viewbox" Stretch="Uniform" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                    	<Viewbox.RenderTransform>
+                    		<TransformGroup>
+                    			<ScaleTransform/>
+                    			<SkewTransform/>
+                    			<RotateTransform/>
+                    			<TranslateTransform/>
+                    		</TransformGroup>
+                    	</Viewbox.RenderTransform>
                         <Canvas Width="11" Height="7">
                             <Path x:Name="path" Fill="Red" RenderTransformOrigin="0.5,0.5">
                                 <Path.RenderTransform>
