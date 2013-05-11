@@ -30,7 +30,7 @@ namespace SaveAllTheTime.Views
             InitializeComponent();
 
             this.WhenAnyObservable(x => x.ViewModel.Open.CanExecuteObservable)
-                .BindTo(this, x => x.Open.Visibility);
+                .BindTo(this, x => x.visualRoot.Visibility);
 
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
                 .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
