@@ -109,7 +109,7 @@ namespace SaveAllTheTime.Tests.ViewModels
 
             ops.FindGitRepo(filename).Returns(@"C:\Foo");
             ops.ProtocolUrlForRepoPath(@"C:\Foo").Returns("https://github.com/reactiveui/reactiveui.git");
-            ops.LastCommitTime(@"C:\Foo").Returns(DateTimeOffset.Now);
+            ops.LastCommitTime(@"C:\Foo").Returns(Observable.Return(DateTimeOffset.Now));
 
             var watch = Substitute.For<IFilesystemWatchCache>();
             watch.Register(null).ReturnsForAnyArgs(repoFswChange);
@@ -134,7 +134,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             ops.ApplicationStartTime.Returns(RxApp.MainThreadScheduler.Now);
             ops.FindGitRepo(filename).Returns(@"C:\Foo");
             ops.ProtocolUrlForRepoPath(@"C:\Foo").Returns("https://github.com/reactiveui/reactiveui.git");
-            ops.LastCommitTime(@"C:\Foo").Returns(DateTimeOffset.MinValue, DateTimeOffset.Now);
+            ops.LastCommitTime(@"C:\Foo").Returns(Observable.Return(DateTimeOffset.MinValue), Observable.Return(DateTimeOffset.Now));
 
             var watch = Substitute.For<IFilesystemWatchCache>();
             watch.Register(null).ReturnsForAnyArgs(repoFswChange);
