@@ -115,14 +115,15 @@ namespace SaveAllTheTime.ViewModels
                 .StartWith(_gitRepoOps.ApplicationStartTime)
                 .ToProperty(this, x => x.LastRepoCommitTime, out _LastRepoCommitTime);
 
-            var commandSub = this.WhenAny(x => x.LastRepoCommitTime, _ => Unit.Default)
-                .InvokeCommand(RefreshStatus);
-
             MessageBus.Current.Listen<Unit>("AnyDocumentChanged")
                 .Timestamp(RxApp.MainThreadScheduler)
                 .Select(x => x.Timestamp)
                 .StartWith(_gitRepoOps.ApplicationStartTime)
                 .ToProperty(this, x => x.LastTextActiveTime, out _LastTextActiveTime);
+
+            var refreshDisp = this.WhenAny(x => x.LastTextActiveTime, x => Unit.Default)
+                .Buffer(TimeSpan.FromSeconds(5), RxApp.MainThreadScheduler)
+                .InvokeCommand(RefreshStatus);
 
             this.WhenAny(x => x.LastRepoCommitTime, x => x.LastTextActiveTime, x => x.MinutesTimeOverride, (commit, active, _) => active.Value - commit.Value)
                 .Select(x => x.Ticks < 0 ? TimeSpan.Zero : x)
@@ -133,18 +134,24 @@ namespace SaveAllTheTime.ViewModels
             var hintState = new Subject<CommitHintState>();
             hintState.ToProperty(this, x => x.HintState, out _HintState);
 
-            this.WhenAny(x => x.SuggestedOpacity, x => x.Value)
-                .Select(x => {
-                    if (x >= 0.95) return CommitHintState.Red;
-                    if (x >= 0.6) return CommitHintState.Yellow;
-                    return CommitHintState.Green;
-                })
-                .Subscribe(hintState);
-
             Open.Subscribe(_ => vsOps.SaveAll());
 
             RefreshStatus.RegisterAsyncObservable(_ => _gitRepoOps.GetStatus(RepoPath))
                 .ToProperty(this, x => x.LatestRepoStatus, out _LatestRepoStatus);
+
+            this.WhenAny(x => x.SuggestedOpacity, x => x.LatestRepoStatus, (opacity, status) => new { Opacity = opacity.Value, Status = status.Value })
+                .Select(x => {
+                    if (x.Status == null) return CommitHintState.Green;
+                    if (!x.Status.Added.Any() &&
+                        !x.Status.Removed.Any() &&
+                        !x.Status.Modified.Any() &&
+                        !x.Status.Missing.Any()) return CommitHintState.Green;
+
+                    if (x.Opacity >= 0.95) return CommitHintState.Red;
+                    if (x.Opacity >= 0.6) return CommitHintState.Yellow;
+                    return CommitHintState.Green;
+                })
+                .Subscribe(hintState);
 
             // NB: Because _LastRepoCommitTime at the end of the day creates a
             // FileSystemWatcher, we have to dispose it or else we'll get FSW 
