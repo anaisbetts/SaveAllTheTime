@@ -135,8 +135,8 @@ namespace SaveAllTheTime.ViewModels
 
             this.WhenAny(x => x.SuggestedOpacity, x => x.Value)
                 .Select(x => {
-                    if (x >= 0.8) return CommitHintState.Red;
-                    if (x >= 0.5) return CommitHintState.Yellow;
+                    if (x >= 0.95) return CommitHintState.Red;
+                    if (x >= 0.6) return CommitHintState.Yellow;
                     return CommitHintState.Green;
                 })
                 .Subscribe(hintState);
@@ -155,7 +155,7 @@ namespace SaveAllTheTime.ViewModels
         public double LastCommitTimeToOpacity(TimeSpan timeSinceLastCommit)
         {
             // http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiIwLjM1KmVeKDAuMDIwKngpIiwiY29sb3IiOiIjMDAwMDAwIn0seyJ0eXBlIjoxMDAwLCJ3aW5kb3ciOlsiMCIsIjY1IiwiMCIsIjIiXX1d
-            var ret = 0.35 * Math.Exp(0.04 * timeSinceLastCommit.TotalMinutes);
+            var ret = 0.35 * Math.Exp(0.02 * timeSinceLastCommit.TotalMinutes);
             return clamp(ret, 0.0, 1.0);
         }
 
