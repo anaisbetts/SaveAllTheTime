@@ -74,7 +74,7 @@ namespace SaveAllTheTime
                 Layout = new SimpleLayout(@"${longdate} - ${level:uppercase=true}: ${message}${onexception:${newline}EXCEPTION\: ${exception:format=ToString}}"),
             };
 
-            var debugRule = new LoggingRule("*", NLog.LogLevel.Debug, debugTarget);
+            var debugRule = new LoggingRule("*", NLog.LogLevel.Info, debugTarget);
             NLog.LogManager.Configuration.AddTarget("debug", debugTarget);
             NLog.LogManager.Configuration.LoggingRules.Add(debugRule);
 
