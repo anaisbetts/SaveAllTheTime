@@ -29,7 +29,6 @@ namespace SaveAllTheTime.Tests.ViewModels
             var watch = Substitute.For<IFilesystemWatchCache>();
             watch.Register(null).ReturnsForAnyArgs(Observable.Never<IList<string>>());
 
-            RxApp.InUnitTestRunner();
             var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
 
             this.Log().Info("Protocol URL: {0}", fixture.ProtocolUrl);
