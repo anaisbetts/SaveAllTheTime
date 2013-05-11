@@ -5,6 +5,7 @@ using LibGit2Sharp;
 using Microsoft.Win32;
 using ReactiveUI;
 using System;
+using System.Reactive.Linq;
 
 namespace SaveAllTheTime.Models
 {
@@ -15,6 +16,7 @@ namespace SaveAllTheTime.Models
         string ProtocolUrlForRepoPath(string repoPath);
         string FindGitRepo(string filePath);
         DateTimeOffset? LastCommitTime(string repoPath);
+        IObservable<RepositoryStatus> GetStatus(string repoPath);
     }
 
     public class GitRepoOps : IGitRepoOps, IEnableLogger
@@ -76,6 +78,22 @@ namespace SaveAllTheTime.Models
             }
 
             return null;
+        }
+
+        public IObservable<RepositoryStatus> GetStatus(string repoPath)
+        {
+            return Observable.Start(() => {
+                var repo = default(Repository);
+                try {
+                    repo = new Repository(repoPath);
+                    return repo.Index.RetrieveStatus();
+                } catch (Exception ex) {
+                    this.Log().WarnException("Couldn't read status for repo: " + repoPath, ex);
+                    throw;
+                } finally {
+                    if (repo != null) repo.Dispose();
+                }
+            }, RxApp.TaskpoolScheduler);
         }
 
         internal static string protocolUrlForRemoteUrl(string remoteUrl)
