@@ -134,7 +134,8 @@
                 </VisualState>
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
-        <Border Background="#22888888" CornerRadius="6" Width="40" Height="40">
+
+        <Border Background="#22888888" CornerRadius="6" Width="40" Height="40" x:Name="RootVisual">
             <Button x:Name="Open" Style="{DynamicResource NoChromeButton}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Background="#01000000">
                     <Viewbox x:Name="viewbox" Stretch="Uniform" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center">

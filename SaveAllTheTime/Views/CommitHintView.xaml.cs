@@ -39,6 +39,8 @@ namespace SaveAllTheTime.Views
 
             this.WhenAnyObservable(x => x.ViewModel.Open)
                 .Subscribe(x => Process.Start(ViewModel.ProtocolUrl));
+
+            this.OneWayBind(ViewModel, x => x.SuggestedOpacity, x => x.RootVisual.Opacity);
         }
 
         public CommitHintViewModel ViewModel {

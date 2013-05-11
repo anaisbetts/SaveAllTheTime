@@ -74,7 +74,7 @@ namespace SaveAllTheTime
             disp.Add(Disposable.Create(() => _adornmentLayer.RemoveAllAdornments()));
 
             var textChanged = Observable.FromEventPattern<TextContentChangedEventArgs>(x => _view.TextBuffer.Changed += x, x => _view.TextBuffer.Changed -= x)
-                .Throttle(TimeSpan.FromSeconds(2.0), TaskPoolScheduler.Default)
+                .Throttle(TimeSpan.FromSeconds(2.0), RxApp.MainThreadScheduler)
                 .Where(_ => !completionBroker.IsCompletionActive(_view))
                 .Select(_ => Unit.Default);
 

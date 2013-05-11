@@ -59,6 +59,11 @@ namespace SaveAllTheTime.ViewModels
             get { return _HintState.Value; }
         }
 
+        ObservableAsPropertyHelper<double> _SuggestedOpacity;
+        public double SuggestedOpacity {
+            get { return _SuggestedOpacity.Value; }
+        }
+
         public ReactiveCommand Open { get; protected set; }
 
         static CommitHintViewModel()
@@ -91,6 +96,7 @@ namespace SaveAllTheTime.ViewModels
             repoWatch
                 .Select(x => _gitRepoOps.LastCommitTime(x))
                 .Select(x => x == null ? _gitRepoOps.ApplicationStartTime : x.Value)
+                .StartWith(_gitRepoOps.ApplicationStartTime)
                 .ToProperty(this, x => x.LastRepoCommitTime, out _LastRepoCommitTime);
 
             MessageBus.Current.Listen<Unit>("AnyDocumentChanged")
@@ -100,8 +106,17 @@ namespace SaveAllTheTime.ViewModels
                 .Do(x => Debug.WriteLine(String.Format("Last Change: {0}", x)))
                 .ToProperty(this, x => x.LastTextActiveTime, out _LastTextActiveTime);
 
-            // TODO
-            Observable.Return(CommitHintState.Green)
+            this.WhenAny(x => x.LastRepoCommitTime, x => x.LastTextActiveTime, (commit, active) => active.Value - commit.Value)
+                .Where(x => x.Ticks > 0)
+                .Select(LastCommitTimeToOpacity)
+                .ToProperty(this, x => x.SuggestedOpacity, out _SuggestedOpacity, 1.0);
+
+            this.WhenAny(x => x.SuggestedOpacity, x => x.Value)
+                .Select(x => {
+                    if (x >= 0.8) return CommitHintState.Red;
+                    if (x >= 0.5) return CommitHintState.Yellow;
+                    return CommitHintState.Green;
+                })
                 .ToProperty(this, x => x.HintState, out _HintState);
 
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
@@ -111,6 +126,19 @@ namespace SaveAllTheTime.ViewModels
             // FileSystemWatcher, we have to dispose it or else we'll get FSW 
             // messages for evar.
             _inner = new CompositeDisposable(_LastRepoCommitTime, _LastTextActiveTime);
+        }
+
+        public double LastCommitTimeToOpacity(TimeSpan timeSinceLastCommit)
+        {
+            // http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiIwLjM1KmVeKDAuMDIwKngpIiwiY29sb3IiOiIjMDAwMDAwIn0seyJ0eXBlIjoxMDAwLCJ3aW5kb3ciOlsiMCIsIjY1IiwiMCIsIjIiXX1d
+            var ret = 0.35 * Math.Exp(0.04 * timeSinceLastCommit.TotalMinutes);
+            return clamp(ret, 0.0, 1.0);
+        }
+
+        double clamp(double value, double min, double max)
+        {
+            if (value < min) return min;
+            return Math.Min(max, value);
         }
 
         public void Dispose()
