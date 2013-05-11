@@ -25,6 +25,7 @@ namespace SaveAllTheTime.Models
                     new FileSystemWatcher(pair.Item1);
 
                 fsw.NotifyFilter = NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
+                fsw.IncludeSubdirectories = true;
 
                 disp.Add(fsw);
 

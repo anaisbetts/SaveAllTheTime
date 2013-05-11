@@ -99,7 +99,7 @@ namespace SaveAllTheTime.ViewModels
 
             var repoWatch = this.WhenAny(x => x.RepoPath, x => x.Value)
                 .Where(x => !String.IsNullOrWhiteSpace(x))
-                .Select(x => watchCache.Register(x).Select(_ => x))
+                .Select(x => watchCache.Register(Path.Combine(x, ".git")).Select(_ => x))
                 .Switch();
 
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
