@@ -43,6 +43,7 @@ namespace SaveAllTheTime.Models
                 var remote = repo.Network.Remotes.FirstOrDefault(x => x.Name.Equals("origin", StringComparison.OrdinalIgnoreCase));
                 if (remote == null) return null;
 
+                this.Log().Info("Using remote {0} for repo {1}", remote.Url, repoPath);
                 remoteUrl = remote.Url.ToLowerInvariant();
             } catch (Exception ex) {
                 this.Log().WarnException("Failed to open repo: " + repoPath, ex);
@@ -51,7 +52,9 @@ namespace SaveAllTheTime.Models
                 if (repo != null) repo.Dispose();
             }
 
-            return protocolUrlForRemoteUrl(remoteUrl);
+            var ret = protocolUrlForRemoteUrl(remoteUrl);
+            this.Log().Info("Protocol URL for {0} is {1}", repoPath, ret);
+            return ret;
         }
 
         public string FindGitRepo(string filePath)
@@ -73,6 +76,7 @@ namespace SaveAllTheTime.Models
                         throw new Exception("Couldn't find commit");
                     }
 
+                    this.Log().Debug("Last Commit Time: {0}", repo.Head.Tip.Author.When);
                     return repo.Head.Tip.Author.When;
                 } catch (Exception ex) {
                     this.Log().WarnException("Couldn't read commit time on repo: " + repoPath, ex);
@@ -155,6 +159,7 @@ namespace SaveAllTheTime.Models
                 return (isGhfwInstalled = false).Value;
             }
 
+            this.Log().Info("GH4W is installed, rad");
             return (isGhfwInstalled = true).Value;
         }
     }
