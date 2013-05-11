@@ -3,14 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             Focusable="False"
              mc:Ignorable="d">
     <UserControl.Resources>
         <Style x:Key="FocusVisual">
             <Setter Property="Control.Template">
                 <Setter.Value>
-                    <ControlTemplate>
-                        <Rectangle Margin="0" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
-                    </ControlTemplate>
+                    <ControlTemplate />
                 </Setter.Value>
             </Setter>
         </Style>
@@ -140,7 +139,7 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
-        <Border Background="#22888888" Margin="0,0,48,32" CornerRadius="6" Width="40" Height="40">
+        <Border Background="#22888888" Margin="0,0,48,32" CornerRadius="6" Width="40" Height="40" Cursor="Hand" ForceCursor="True">
             <Button x:Name="Open" Style="{DynamicResource NoChromeButton}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Background="#01000000">
                     <Viewbox x:Name="viewbox" Stretch="Uniform" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
