@@ -65,7 +65,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Padding="0,0,48,32" x:Name="visualRoot">
+    <Grid x:Name="visualRoot">
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="HintStateGroup">
                 <VisualStateGroup.Transitions>
@@ -140,7 +140,7 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
 
-        <Border Background="#22888888" CornerRadius="6" Width="40" Height="40" x:Name="RootVisual">
+        <Border Background="#22888888" Margin="0,0,48,32" CornerRadius="6" Width="40" Height="40">
             <Button x:Name="Open" Style="{DynamicResource NoChromeButton}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <Grid Background="#01000000">
                     <Viewbox x:Name="viewbox" Stretch="Uniform" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -173,5 +173,10 @@
                 </Grid>
             </Button>
         </Border>
-    </Border>
+
+<!--    Uncomment this and the codebehind section if you want to test the transitions
+        <TextBlock x:Name="MinutesTimeOverrideDisplay" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,2,0" />
+        <Slider x:Name="MinutesTimeOverride" Minimum="0" Maximum="100" VerticalAlignment="Bottom" />
+-->
+    </Grid>
 </UserControl>

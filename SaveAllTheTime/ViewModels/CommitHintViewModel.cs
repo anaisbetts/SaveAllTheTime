@@ -35,6 +35,12 @@ namespace SaveAllTheTime.ViewModels
 
         public string FilePath { get; protected set; }
 
+        double? _MinutesTimeOverride;
+        public double? MinutesTimeOverride {
+            get { return _MinutesTimeOverride; }
+            set { this.RaiseAndSetIfChanged(ref _MinutesTimeOverride, value); }
+        }
+
         ObservableAsPropertyHelper<string> _RepoPath;
         public string RepoPath {
             get { return _RepoPath.Value; }
@@ -116,12 +122,12 @@ namespace SaveAllTheTime.ViewModels
                 .Timestamp(RxApp.MainThreadScheduler)
                 .Select(x => x.Timestamp)
                 .StartWith(_gitRepoOps.ApplicationStartTime)
-                .Do(x => Debug.WriteLine(String.Format("Last Change: {0}", x)))
                 .ToProperty(this, x => x.LastTextActiveTime, out _LastTextActiveTime);
 
-            this.WhenAny(x => x.LastRepoCommitTime, x => x.LastTextActiveTime, (commit, active) => active.Value - commit.Value)
-                .Where(x => x.Ticks > 0)
-                .Select(LastCommitTimeToOpacity)
+            this.WhenAny(x => x.LastRepoCommitTime, x => x.LastTextActiveTime, x => x.MinutesTimeOverride, (commit, active, _) => active.Value - commit.Value)
+                .Select(x => x.Ticks < 0 ? TimeSpan.Zero : x)
+                .Select(x => MinutesTimeOverride != null ? TimeSpan.FromMinutes(MinutesTimeOverride.Value) : x)
+                .Select(x => LastCommitTimeToOpacity(x))
                 .ToProperty(this, x => x.SuggestedOpacity, out _SuggestedOpacity, 1.0);
 
             var hintState = new Subject<CommitHintState>();

@@ -44,7 +44,19 @@ namespace SaveAllTheTime.Views
             this.WhenAnyObservable(x => x.ViewModel.Open)
                 .Subscribe(x => Process.Start(ViewModel.ProtocolUrl));
 
-            this.OneWayBind(ViewModel, x => x.SuggestedOpacity, x => x.RootVisual.Opacity);
+            this.WhenAny(x => x.ViewModel.SuggestedOpacity, x => x.Value)
+                .Select(x => x + 0.25)
+                .BindTo(this, x => x.visualRoot.Opacity);
+
+            /* Uncomment this and the XAML section if you want to test the
+             * transitions over time
+            this.Bind(ViewModel, x => x.MinutesTimeOverride, x => x.MinutesTimeOverride.Value);
+
+            this.WhenAny(x => x.ViewModel.MinutesTimeOverride, x => x.Value)
+                .Where(x => x.HasValue)
+                .Select(x => x.Value.ToString("###.#"))
+                .BindTo(this, x => x.MinutesTimeOverrideDisplay.Text);
+            */
         }
 
         public CommitHintViewModel ViewModel {
