@@ -62,13 +62,17 @@ namespace SaveAllTheTime
 
             var hasAdded = false;
             disp.Add(sizeChanged.Subscribe(x => {
-                Canvas.SetLeft(commitControl, _view.ViewportRight - commitControl.ActualWidth);
-                Canvas.SetTop(commitControl, _view.ViewportBottom - commitControl.ActualHeight);
+                if (!hasAdded) {
+                    _adornmentLayer.AddAdornment(AdornmentPositioningBehavior.ViewportRelative, null, null, commitControl, null);
+                    hasAdded = true;
+                }
 
-                if (hasAdded) return;
-
-                _adornmentLayer.AddAdornment(AdornmentPositioningBehavior.ViewportRelative, null, null, commitControl, null);
-                hasAdded = true;
+                // NB: The scheduling is to get around initialization where ActualXXX is zero
+                var sched = (commitControl.ActualWidth > 0 ? ImmediateScheduler.Instance : RxApp.MainThreadScheduler);
+                sched.Schedule(() => {
+                    Canvas.SetLeft(commitControl, _view.ViewportRight - commitControl.ActualWidth);
+                    Canvas.SetTop(commitControl, _view.ViewportBottom - commitControl.ActualHeight);
+                });
             }));
 
             disp.Add(Disposable.Create(() => _adornmentLayer.RemoveAllAdornments()));
