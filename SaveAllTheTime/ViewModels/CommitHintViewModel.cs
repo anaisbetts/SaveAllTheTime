@@ -16,6 +16,7 @@ using System.Reactive.Disposables;
 using System.Reactive;
 using System.Diagnostics;
 using System.Reactive.Concurrency;
+using System.Reactive.Subjects;
 
 namespace SaveAllTheTime.ViewModels
 {
@@ -65,7 +66,13 @@ namespace SaveAllTheTime.ViewModels
             get { return _SuggestedOpacity.Value; }
         }
 
+        ObservableAsPropertyHelper<RepositoryStatus> _LatestRepoStatus;
+        public RepositoryStatus LatestRepoStatus {
+            get { return _LatestRepoStatus.Value; }
+        }
+
         public ReactiveCommand Open { get; protected set; }
+        public ReactiveAsyncCommand RefreshStatus { get; protected set; }
 
         static CommitHintViewModel()
         {
@@ -95,6 +102,11 @@ namespace SaveAllTheTime.ViewModels
                 .Select(x => watchCache.Register(x).Select(_ => x))
                 .Switch();
 
+            Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
+            RefreshStatus = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
+
+            repoWatch.InvokeCommand(RefreshStatus);
+
             repoWatch
                 .Select(x => _gitRepoOps.LastCommitTime(x))
                 .Select(x => x == null ? _gitRepoOps.ApplicationStartTime : x.Value)
@@ -113,16 +125,30 @@ namespace SaveAllTheTime.ViewModels
                 .Select(LastCommitTimeToOpacity)
                 .ToProperty(this, x => x.SuggestedOpacity, out _SuggestedOpacity, 1.0);
 
+            var hintState = new Subject<CommitHintState>();
+            hintState.ToProperty(this, x => x.HintState, out _HintState);
+
             this.WhenAny(x => x.SuggestedOpacity, x => x.Value)
                 .Select(x => {
                     if (x >= 0.8) return CommitHintState.Red;
                     if (x >= 0.5) return CommitHintState.Yellow;
                     return CommitHintState.Green;
                 })
-                .ToProperty(this, x => x.HintState, out _HintState);
+                .Subscribe(hintState);
 
-            Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
             Open.Subscribe(_ => vsOps.SaveAll());
+
+            RefreshStatus.RegisterAsyncObservable(_ => _gitRepoOps.GetStatus(RepoPath))
+                .ToProperty(this, x => x.LatestRepoStatus, out _LatestRepoStatus);
+
+            var previousState = HintState;
+            RefreshStatus.ItemsInflight
+                .Select(x => {
+                    if (x == 0) return previousState;
+                    previousState = HintState;
+                    return CommitHintState.Loading;
+                })
+                .Subscribe(hintState);
 
             // NB: Because _LastRepoCommitTime at the end of the day creates a
             // FileSystemWatcher, we have to dispose it or else we'll get FSW 
