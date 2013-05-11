@@ -15,6 +15,7 @@ using System.Threading;
 using System.Reactive.Disposables;
 using System.Reactive;
 using System.Diagnostics;
+using System.Reactive.Concurrency;
 
 namespace SaveAllTheTime.ViewModels
 {
@@ -70,6 +71,7 @@ namespace SaveAllTheTime.ViewModels
         {
             // NB: This is a bug in ReactiveUI :-/
             MessageBus.Current = new MessageBus();
+            RxApp.MainThreadScheduler = DispatcherScheduler.Current;
         }
 
         public CommitHintViewModel(string filePath, IVisualStudioOps vsOps, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
