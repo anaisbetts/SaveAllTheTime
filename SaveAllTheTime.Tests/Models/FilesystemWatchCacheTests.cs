@@ -35,7 +35,7 @@ namespace SaveAllTheTime.Tests.Models
 
             // Debounce interval currently at 250ms
             Assert.Equal(1, output.Count);
-            Assert.True(output.Contains(targetFile));
+            Assert.True(output[0].Contains(targetFile));
 
             // FilesystemWatchCache shouldn't be watching after we disconnect
             var currentCount = output.Count;

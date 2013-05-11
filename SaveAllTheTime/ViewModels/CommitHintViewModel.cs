@@ -77,7 +77,6 @@ namespace SaveAllTheTime.ViewModels
         {
             // NB: This is a bug in ReactiveUI :-/
             MessageBus.Current = new MessageBus();
-            RxApp.MainThreadScheduler = DispatcherScheduler.Current;
         }
 
         public CommitHintViewModel(string filePath, IVisualStudioOps vsOps, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
@@ -104,13 +103,14 @@ namespace SaveAllTheTime.ViewModels
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
             RefreshStatus = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
 
-            repoWatch.InvokeCommand(RefreshStatus);
-
             repoWatch
                 .Select(x => _gitRepoOps.LastCommitTime(x))
                 .Select(x => x == null ? _gitRepoOps.ApplicationStartTime : x.Value)
                 .StartWith(_gitRepoOps.ApplicationStartTime)
                 .ToProperty(this, x => x.LastRepoCommitTime, out _LastRepoCommitTime);
+
+            var commandSub = this.WhenAny(x => x.LastRepoCommitTime, _ => Unit.Default)
+                .InvokeCommand(RefreshStatus);
 
             MessageBus.Current.Listen<Unit>("AnyDocumentChanged")
                 .Timestamp(RxApp.MainThreadScheduler)

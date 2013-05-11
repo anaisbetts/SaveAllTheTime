@@ -27,7 +27,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             ops.FindGitRepo(filename).Returns(default(string));
 
             var watch = Substitute.For<IFilesystemWatchCache>();
-            watch.Register(null).ReturnsForAnyArgs(Observable.Never<string>());
+            watch.Register(null).ReturnsForAnyArgs(Observable.Never<IList<string>>());
 
             RxApp.InUnitTestRunner();
             var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
@@ -46,7 +46,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             ops.ProtocolUrlForRepoPath(@"C:\Foo").Returns(default(string));
 
             var watch = Substitute.For<IFilesystemWatchCache>();
-            watch.Register(null).ReturnsForAnyArgs(Observable.Never<string>());
+            watch.Register(null).ReturnsForAnyArgs(Observable.Never<IList<string>>());
 
             var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
 
@@ -64,7 +64,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             ops.ProtocolUrlForRepoPath(@"C:\Foo").Returns("https://github.com/reactiveui/reactiveui.git");
 
             var watch = Substitute.For<IFilesystemWatchCache>();
-            watch.Register(null).ReturnsForAnyArgs(Observable.Never<string>());
+            watch.Register(null).ReturnsForAnyArgs(Observable.Never<IList<string>>());
 
             var vs = Substitute.For<IVisualStudioOps>();
             var fixture = new CommitHintViewModel(filename, vs, ops, watch);
@@ -84,7 +84,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             ops.ProtocolUrlForRepoPath(@"C:\Foo").Returns(default(string));
 
             var subscriptionCount = 0;
-            var countingObs = Observable.Create<string>(subj => {
+            var countingObs = Observable.Create<IList<string>>(subj => {
                 subscriptionCount++;
                 return Disposable.Create(() => subscriptionCount--);
             });
@@ -94,7 +94,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             Assert.Equal(0, subscriptionCount);
 
             var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
-            Assert.Equal(1, subscriptionCount);
+            Assert.NotEqual(0, subscriptionCount);
 
             fixture.Dispose();
             Assert.Equal(0, subscriptionCount);

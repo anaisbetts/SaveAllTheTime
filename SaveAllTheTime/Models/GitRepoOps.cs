@@ -68,7 +68,9 @@ namespace SaveAllTheTime.Models
             var repo = default(Repository);
             try {
                 repo = new Repository(repoPath);
-                if (repo.Head == null || repo.Head.Tip == null) return null;
+                if (repo.Head == null || repo.Head.Tip == null) {
+                    return null;
+                }
 
                 return repo.Head.Tip.Author.When;
             } catch (Exception ex) {

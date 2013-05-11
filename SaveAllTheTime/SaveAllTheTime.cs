@@ -39,6 +39,12 @@ namespace SaveAllTheTime
         readonly DTE _dte;
         IDisposable _inner;
 
+        static SaveAllTheTimeAdornment()
+        {
+            // NB: This is a bug in ReactiveUI :-/
+            RxApp.MainThreadScheduler = DispatcherScheduler.Current;
+        }
+
         /// <summary>
         /// Creates a square image and attaches an event handler to the layout changed event that
         /// adds the the square in the upper right-hand corner of the TextView via the adornment layer
