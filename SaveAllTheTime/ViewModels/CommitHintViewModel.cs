@@ -92,6 +92,8 @@ namespace SaveAllTheTime.ViewModels
             watchCache = watchCache ?? _defaultWatchCache;
             _gitRepoOps = gitRepoOps ?? new GitRepoOps();
 
+            this.Log().Info("Starting Commit Hint for {0}", filePath);
+
             this.WhenAny(x => x.FilePath, x => x.Value)
                 .Where(x => !String.IsNullOrWhiteSpace(x))
                 .Select(_gitRepoOps.FindGitRepo)

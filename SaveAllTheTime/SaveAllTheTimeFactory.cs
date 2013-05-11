@@ -57,18 +57,6 @@ namespace SaveAllTheTime
         public static void Initialize()
         {
 #if DEBUG
-            const bool inDebug = true;
-#else 
-            const bool inDebug = false;
-#endif
-
-            if (RxApp.InUnitTestRunner() || inDebug) {
-                configureDebugLogger();
-            }
-        }
-
-        static void configureDebugLogger()
-        {
             var debugTarget = new DebuggerTarget() {
                 Name = "debug",
                 Layout = new SimpleLayout(@"${longdate} - ${level:uppercase=true}: ${message}${onexception:${newline}EXCEPTION\: ${exception:format=ToString}}"),
@@ -79,6 +67,7 @@ namespace SaveAllTheTime
             NLog.LogManager.Configuration.LoggingRules.Add(debugRule);
 
             NLog.LogManager.ReconfigExistingLoggers();
+#endif
         }
     }
 }
