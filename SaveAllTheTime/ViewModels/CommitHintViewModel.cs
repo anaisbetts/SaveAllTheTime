@@ -127,6 +127,7 @@ namespace SaveAllTheTime.ViewModels
 
             var refreshDisp = this.WhenAny(x => x.LastTextActiveTime, x => Unit.Default)
                 .Buffer(TimeSpan.FromSeconds(5), RxApp.TaskpoolScheduler)
+                .StartWith(new List<Unit> { Unit.Default })
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .InvokeCommand(RefreshStatus);
 
