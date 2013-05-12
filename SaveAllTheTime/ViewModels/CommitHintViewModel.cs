@@ -34,6 +34,7 @@ namespace SaveAllTheTime.ViewModels
         IDisposable _inner;
 
         public string FilePath { get; protected set; }
+        public UserSettings UserSettings { get; protected set; }
 
         double? _MinutesTimeOverride;
         public double? MinutesTimeOverride {
@@ -77,6 +78,7 @@ namespace SaveAllTheTime.ViewModels
         }
 
         public ReactiveCommand Open { get; protected set; }
+        public ReactiveCommand GoAway { get; protected set; }
         public ReactiveAsyncCommand RefreshStatus { get; protected set; }
         public ReactiveAsyncCommand RefreshLastCommitTime { get; protected set; }
 
@@ -86,11 +88,12 @@ namespace SaveAllTheTime.ViewModels
             MessageBus.Current = new MessageBus();
         }
 
-        public CommitHintViewModel(string filePath, IVisualStudioOps vsOps, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
+        public CommitHintViewModel(string filePath, IVisualStudioOps vsOps, UserSettings settings = null, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
         {
             FilePath = filePath;
             watchCache = watchCache ?? _defaultWatchCache;
             _gitRepoOps = gitRepoOps ?? new GitRepoOps();
+            UserSettings = settings ?? new UserSettings();
 
             this.Log().Info("Starting Commit Hint for {0}", filePath);
 
@@ -105,6 +108,7 @@ namespace SaveAllTheTime.ViewModels
                 .ToProperty(this, x => x.ProtocolUrl, out _ProtocolUrl);
 
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
+            GoAway = new ReactiveCommand();
             RefreshStatus = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
             RefreshLastCommitTime = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
 
