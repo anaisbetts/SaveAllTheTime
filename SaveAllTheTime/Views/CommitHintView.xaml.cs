@@ -46,7 +46,14 @@ namespace SaveAllTheTime.Views
             this.BindCommand(ViewModel, x => x.Open, x => x.Open);
 
             this.WhenAnyObservable(x => x.ViewModel.Open)
-                .Subscribe(x => Process.Start(ViewModel.ProtocolUrl));
+                .Subscribe(x => {
+                    url = ViewModel.ProtocolUrl;
+                    if (ViewModel.IsGitHubForWindowsInstalled == false) {
+                        url = "https://windows.github.com";
+                    }
+
+                    Process.Start(url);
+                });
 
             this.WhenAny(x => x.ViewModel.SuggestedOpacity, x => x.Value)
                 .Select(x => x + 0.25)

@@ -13,6 +13,7 @@ namespace SaveAllTheTime.Models
     {
         DateTimeOffset ApplicationStartTime { get; }
 
+        bool IsGitHubForWindowsInstalled();
         string ProtocolUrlForRepoPath(string repoPath);
         string FindGitRepo(string filePath);
         IObservable<DateTimeOffset> LastCommitTime(string repoPath);
@@ -103,6 +104,23 @@ namespace SaveAllTheTime.Models
             }, RxApp.TaskpoolScheduler);
         }
 
+        bool? isGhfwInstalled;
+        public bool IsGitHubForWindowsInstalled()
+        {
+            if (isGhfwInstalled != null) return isGhfwInstalled.Value;
+
+            try {
+                var hkcu = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Default);
+                hkcu.OpenSubKey("github-windows", RegistryKeyPermissionCheck.ReadSubTree);
+            } catch (Exception ex) {
+                this.Log().WarnException("Couldn't detect if GH4W is installed, bailing", ex);
+                return (isGhfwInstalled = false).Value;
+            }
+
+            this.Log().Info("GH4W is installed, rad");
+            return (isGhfwInstalled = true).Value;
+        }
+
         internal static string protocolUrlForRemoteUrl(string remoteUrl)
         {
             // Either https://github.com/reactiveui/ReactiveUI.git or
@@ -144,23 +162,6 @@ namespace SaveAllTheTime.Models
             }
 
             return null;
-        }
-
-        bool? isGhfwInstalled;
-        bool isGitHubForWindowsInstalled()
-        {
-            if (isGhfwInstalled != null) return isGhfwInstalled.Value;
-
-            try {
-                var hkcu = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Default);
-                hkcu.OpenSubKey("github-windows", RegistryKeyPermissionCheck.ReadSubTree);
-            } catch (Exception ex) {
-                this.Log().WarnException("Couldn't detect if GH4W is installed, bailing", ex);
-                return (isGhfwInstalled = false).Value;
-            }
-
-            this.Log().Info("GH4W is installed, rad");
-            return (isGhfwInstalled = true).Value;
         }
     }
 }
