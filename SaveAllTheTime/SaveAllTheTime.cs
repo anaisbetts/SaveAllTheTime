@@ -68,18 +68,26 @@ namespace SaveAllTheTime
                 Observable.FromEventPattern<EventHandler, EventArgs>(x => _view.ViewportWidthChanged += x, x => _view.ViewportWidthChanged -= x));
 
             var hasAdded = false;
-            disp.Add(sizeChanged.Subscribe(x => {
+            disp.Add(sizeChanged.Subscribe(__ => {
                 if (!hasAdded) {
                     _adornmentLayer.AddAdornment(AdornmentPositioningBehavior.ViewportRelative, null, null, commitControl, null);
                     hasAdded = true;
                 }
 
                 // NB: The scheduling is to get around initialization where ActualXXX is zero
-                var sched = (commitControl.ActualWidth > 0 ? ImmediateScheduler.Instance : RxApp.MainThreadScheduler);
-                sched.Schedule(() => {
+                var action = new Action<double>(_ => {
                     Canvas.SetLeft(commitControl, _view.ViewportRight - commitControl.ActualWidth);
                     Canvas.SetTop(commitControl, _view.ViewportBottom - commitControl.ActualHeight);
                 });
+
+                if (commitControl.ActualWidth > 1) {
+                    action(commitControl.ActualWidth);
+                } else {
+                    commitControl.WhenAny(x => x.ActualWidth, x => x.Value)
+                        .Where(x => x > 1)
+                        .Take(1)
+                        .Subscribe(action);
+                }
             }));
 
             disp.Add(Disposable.Create(() => _adornmentLayer.RemoveAllAdornments()));
