@@ -37,6 +37,7 @@ namespace SaveAllTheTime.Views
                 .BindTo(this, x => x.visualRoot.Visibility);
 
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
+                .Throttle(TimeSpan.FromMilliseconds(500), RxApp.MainThreadScheduler)
                 .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
 
             this.WhenAnyObservable(x => x.ViewModel.RefreshStatus.ItemsInflight)
