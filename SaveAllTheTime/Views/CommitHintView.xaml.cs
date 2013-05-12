@@ -31,9 +31,9 @@ namespace SaveAllTheTime.Views
             InitializeComponent();
 
             Observable.CombineLatest(
-                    this.WhenAnyObservable(x => x.ViewModel.Open.CanExecuteObservable),
+                    this.WhenAny(x => x.ViewModel.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)),
                     this.WhenAny(x => x.ViewModel.UserSettings.ShouldHideCommitWidget, x => x.Value),
-                    (canOpen, shouldHide) => canOpen && !shouldHide)
+                    (hasRepoPath, shouldHide) => hasRepoPath && !shouldHide)
                 .BindTo(this, x => x.visualRoot.Visibility);
 
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
@@ -46,7 +46,14 @@ namespace SaveAllTheTime.Views
             this.BindCommand(ViewModel, x => x.Open, x => x.Open);
 
             this.WhenAnyObservable(x => x.ViewModel.Open)
-                .Subscribe(x => Process.Start(ViewModel.ProtocolUrl));
+                .Subscribe(x => {
+                    var url = ViewModel.ProtocolUrl;
+                    if (ViewModel.IsGitHubForWindowsInstalled == false) {
+                        url = "http://windows.github.com";
+                    }
+
+                    Process.Start(url);
+                });
 
             this.WhenAny(x => x.ViewModel.SuggestedOpacity, x => x.Value)
                 .Select(x => x + 0.25)

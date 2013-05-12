@@ -35,6 +35,7 @@ namespace SaveAllTheTime.ViewModels
 
         public string FilePath { get; protected set; }
         public UserSettings UserSettings { get; protected set; }
+        public bool IsGitHubForWindowsInstalled { get; protected set; }
 
         double? _MinutesTimeOverride;
         public double? MinutesTimeOverride {
@@ -88,6 +89,8 @@ namespace SaveAllTheTime.ViewModels
             watchCache = watchCache ?? _defaultWatchCache;
             _gitRepoOps = gitRepoOps ?? new GitRepoOps();
             UserSettings = settings ?? new UserSettings();
+
+            IsGitHubForWindowsInstalled = _gitRepoOps.IsGitHubForWindowsInstalled();
 
             this.Log().Info("Starting Commit Hint for {0}", filePath);
 

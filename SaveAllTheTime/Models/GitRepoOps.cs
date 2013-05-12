@@ -13,6 +13,7 @@ namespace SaveAllTheTime.Models
     {
         DateTimeOffset ApplicationStartTime { get; }
 
+        bool IsGitHubForWindowsInstalled();
         string ProtocolUrlForRepoPath(string repoPath);
         string FindGitRepo(string filePath);
         IObservable<DateTimeOffset> LastCommitTime(string repoPath);
@@ -33,8 +34,6 @@ namespace SaveAllTheTime.Models
 
         public string ProtocolUrlForRepoPath(string repoPath)
         {
-            if (!isGitHubForWindowsInstalled()) return null;
-
             var remoteUrl = default(string);
             var repo = default(Repository);
 
@@ -103,24 +102,32 @@ namespace SaveAllTheTime.Models
             }, RxApp.TaskpoolScheduler);
         }
 
-        internal static string protocolUrlForRemoteUrl(string remoteUrl)
+        bool? isGhfwInstalled;
+        public bool IsGitHubForWindowsInstalled()
         {
-            // Either https://github.com/reactiveui/ReactiveUI.git or
-            // git@github.com:reactiveui/ReactiveUI.git
+            if (isGhfwInstalled != null) return isGhfwInstalled.Value;
 
-            var nwo = default(string);
-            if (remoteUrl.StartsWith("https://github.com")) {
-                nwo = remoteUrl.Replace("https://github.com/", "");
-            } else if (remoteUrl.StartsWith("git@github.com")) {
-                nwo = remoteUrl.Replace("git@github.com:", "");
+            try {
+                var hkcu = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Default);
+                hkcu.OpenSubKey("github-windows", RegistryKeyPermissionCheck.ReadSubTree);
+            } catch (Exception ex) {
+                this.Log().WarnException("Couldn't detect if GH4W is installed, bailing", ex);
+                return (isGhfwInstalled = false).Value;
             }
 
-            if (nwo == null) {
+            this.Log().Info("GH4W is installed, rad");
+            return (isGhfwInstalled = true).Value;
+        }
+
+        internal string protocolUrlForRemoteUrl(string remoteUrl)
+        {
+            try {
+                var uri = new Uri(String.Format("github-windows://openRepo/{0}", remoteUrl));
+                return uri.ToString();
+            } catch (Exception ex) {
+                this.Log().Warn("Tried to use bogus remote URL: " + remoteUrl, ex);
                 return null;
             }
-
-            nwo = (new Regex(".git$")).Replace(nwo, "");
-            return String.Format("github-windows://openRepo/https://github.com/{0}", nwo);
         }
 
         static MemoizingMRUCache<string, string> findGitRepoCache = new MemoizingMRUCache<string, string>(
@@ -144,23 +151,6 @@ namespace SaveAllTheTime.Models
             }
 
             return null;
-        }
-
-        bool? isGhfwInstalled;
-        bool isGitHubForWindowsInstalled()
-        {
-            if (isGhfwInstalled != null) return isGhfwInstalled.Value;
-
-            try {
-                var hkcu = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Default);
-                hkcu.OpenSubKey("github-windows", RegistryKeyPermissionCheck.ReadSubTree);
-            } catch (Exception ex) {
-                this.Log().WarnException("Couldn't detect if GH4W is installed, bailing", ex);
-                return (isGhfwInstalled = false).Value;
-            }
-
-            this.Log().Info("GH4W is installed, rad");
-            return (isGhfwInstalled = true).Value;
         }
     }
 }
