@@ -93,6 +93,7 @@ th {
 
 img {
   max-width:100%;
+  border: 1px solid #f8f8f8;
 }
 
 header {
