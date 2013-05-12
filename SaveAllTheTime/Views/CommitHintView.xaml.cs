@@ -47,9 +47,9 @@ namespace SaveAllTheTime.Views
 
             this.WhenAnyObservable(x => x.ViewModel.Open)
                 .Subscribe(x => {
-                    url = ViewModel.ProtocolUrl;
+                    var url = ViewModel.ProtocolUrl;
                     if (ViewModel.IsGitHubForWindowsInstalled == false) {
-                        url = "https://windows.github.com";
+                        url = "http://windows.github.com";
                     }
 
                     Process.Start(url);

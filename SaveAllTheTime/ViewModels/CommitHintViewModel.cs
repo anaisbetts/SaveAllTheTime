@@ -90,7 +90,7 @@ namespace SaveAllTheTime.ViewModels
             _gitRepoOps = gitRepoOps ?? new GitRepoOps();
             UserSettings = settings ?? new UserSettings();
 
-            IsGitHubForWindowsInstalled = gitRepoOps.IsGitHubForWindowsInstalled();
+            IsGitHubForWindowsInstalled = _gitRepoOps.IsGitHubForWindowsInstalled();
 
             this.Log().Info("Starting Commit Hint for {0}", filePath);
 

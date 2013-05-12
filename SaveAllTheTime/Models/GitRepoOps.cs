@@ -34,8 +34,6 @@ namespace SaveAllTheTime.Models
 
         public string ProtocolUrlForRepoPath(string repoPath)
         {
-            if (!isGitHubForWindowsInstalled()) return null;
-
             var remoteUrl = default(string);
             var repo = default(Repository);
 
