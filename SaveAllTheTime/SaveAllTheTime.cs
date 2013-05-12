@@ -43,11 +43,6 @@ namespace SaveAllTheTime
 
         static SaveAllTheTimeAdornment()
         {
-            // NB: This is a bug in ReactiveUI :-/
-            if (MessageBus.Current == null) {
-                MessageBus.Current = new MessageBus();
-            }
-            RxApp.MainThreadScheduler = DispatcherScheduler.Current;
             settings = UserSettings.Load();
             settings.AutoSave();
         }

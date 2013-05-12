@@ -90,16 +90,6 @@ namespace SaveAllTheTime
         /// </summary>
         HashSet<IVsWindowFrame> _vsWindowFrameSet = new HashSet<IVsWindowFrame>();
 
-        static DocumentMonitorService()
-        {
-            // NB: This is a bug in ReactiveUI :-/
-            if (MessageBus.Current == null) {
-                MessageBus.Current = new MessageBus();
-            }
-
-            RxApp.MainThreadScheduler = DispatcherScheduler.Current;
-        }
-
         [ImportingConstructor]
         internal DocumentMonitorService(SVsServiceProvider vsServiceProvider, ICompletionBroker completionBroker)
         {

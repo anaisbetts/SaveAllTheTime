@@ -82,12 +82,6 @@ namespace SaveAllTheTime.ViewModels
         public ReactiveAsyncCommand RefreshStatus { get; protected set; }
         public ReactiveAsyncCommand RefreshLastCommitTime { get; protected set; }
 
-        static CommitHintViewModel()
-        {
-            // NB: This is a bug in ReactiveUI :-/
-            MessageBus.Current = new MessageBus();
-        }
-
         public CommitHintViewModel(string filePath, IVisualStudioOps vsOps, UserSettings settings = null, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
         {
             FilePath = filePath;
