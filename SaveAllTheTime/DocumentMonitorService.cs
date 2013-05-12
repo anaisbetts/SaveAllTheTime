@@ -2,23 +2,28 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
+using System.Linq;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Windows.Threading;
 using EnvDTE;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
+using ReactiveUI;
 
 namespace SaveAllTheTime
 {
     [Export(typeof(IWpfTextViewCreationListener))]
+    [Export(typeof(IVisualStudioOps))]
     [ContentType("any")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
-    sealed class DocumentMonitorService : IWpfTextViewCreationListener, IVsRunningDocTableEvents, IVsRunningDocTableEvents2
+    sealed class DocumentMonitorService : IWpfTextViewCreationListener, IVsRunningDocTableEvents, IVsRunningDocTableEvents2, IVisualStudioOps
     {
         #region VsWindowFrameMonitor 
 
@@ -68,7 +73,9 @@ namespace SaveAllTheTime
 
         #endregion
 
+        readonly ICompletionBroker _completionBroker;
         readonly RunningDocumentTable _runningDocumentTable;
+        readonly List<ITextView> _openTextViewList = new List<ITextView>();
         readonly DTE _dte;
 
         /// <summary>
@@ -83,17 +90,35 @@ namespace SaveAllTheTime
         /// </summary>
         HashSet<IVsWindowFrame> _vsWindowFrameSet = new HashSet<IVsWindowFrame>();
 
+        static DocumentMonitorService()
+        {
+            // NB: This is a bug in ReactiveUI :-/
+            if (MessageBus.Current == null) {
+                MessageBus.Current = new MessageBus();
+            }
+
+            RxApp.MainThreadScheduler = DispatcherScheduler.Current;
+        }
+
         [ImportingConstructor]
-        internal DocumentMonitorService(SVsServiceProvider vsServiceProvider)
+        internal DocumentMonitorService(SVsServiceProvider vsServiceProvider, ICompletionBroker completionBroker)
         {
             _runningDocumentTable = new RunningDocumentTable(vsServiceProvider);
             _runningDocumentTable.Advise(this);
+            _completionBroker = completionBroker;
             _dte = (DTE)vsServiceProvider.GetService(typeof(_DTE));
 
+            var documentChanged = Observable.FromEventPattern(x => _changed += x, x => _changed -= x)
+                .Throttle(TimeSpan.FromSeconds(2.0), RxApp.MainThreadScheduler)
+                .Where(_ => !IsCompletionActive())
+                .Select(_ => Unit.Default);
+
             var dispatcher = Dispatcher.CurrentDispatcher;
-            Observable.FromEventPattern(x => _changed += x, x => _changed -= x)
-                .Throttle(TimeSpan.FromSeconds(2.0), TaskPoolScheduler.Default)
-                .Subscribe(_ => dispatcher.BeginInvoke(new Action(() => SaveAll())));
+            documentChanged.Subscribe(_ => dispatcher.BeginInvoke(new Action(() => SaveAll())));
+
+            // NB: We use the message bus here, because we want to effectively
+            // merge all of the text change notifications from any document
+            MessageBus.Current.RegisterMessageSource(documentChanged, "AnyDocumentChanged");
         }
 
         void RaiseChanged()
@@ -131,7 +156,14 @@ namespace SaveAllTheTime
             _vsWindowFrameSet.Remove(vsWindowFrame);
         }
 
-        void SaveAll()
+        bool IsCompletionActive()
+        {
+            return _openTextViewList.Any(x => _completionBroker.IsCompletionActive(x));
+        }
+
+        #region IVisualStudioOps
+
+        public void SaveAll()
         {
             try {
                 _dte.ExecuteCommand("File.SaveAll");
@@ -141,14 +173,18 @@ namespace SaveAllTheTime
             }
         }
 
+        #endregion
+
         #region IWpfTextViewCreationListener
 
         public void TextViewCreated(IWpfTextView textView)
         {
+            _openTextViewList.Add(textView);
             var textBuffer = textView.TextBuffer;
             textBuffer.Changed += OnTextBufferChanged;
             textView.Closed += (sender, e) => {
                 textBuffer.Changed -= OnTextBufferChanged;
+                _openTextViewList.Remove(textView);
             };
         }
 

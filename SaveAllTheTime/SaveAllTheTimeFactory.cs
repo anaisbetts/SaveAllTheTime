@@ -30,14 +30,12 @@ namespace SaveAllTheTime
         [Order(After = PredefinedAdornmentLayers.Caret)]
         public AdornmentLayerDefinition editorAdornmentLayer = null;
 
-        readonly ICompletionBroker _completionBroker;
-        readonly DTE _dte;
+        readonly IVisualStudioOps _vsOps;
 
         [ImportingConstructor]
-        public SaveAllTheTimeFactory(ICompletionBroker completionBroker, SVsServiceProvider vsServiceProvider)
+        public SaveAllTheTimeFactory(IVisualStudioOps vsOps)
         {
-            _completionBroker = completionBroker;
-            _dte = (DTE)vsServiceProvider.GetService(typeof(_DTE));
+            _vsOps = vsOps;
         }
 
         /// <summary>
@@ -46,7 +44,7 @@ namespace SaveAllTheTime
         /// <param name="textView">The <see cref="IWpfTextView"/> upon which the adornment should be placed</param>
         public void TextViewCreated(IWpfTextView textView)
         {
-            new SaveAllTheTimeAdornment(textView, _completionBroker, _dte);
+            new SaveAllTheTimeAdornment(textView, _vsOps);
         }
     }
 
