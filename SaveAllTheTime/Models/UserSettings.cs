@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,13 +23,18 @@ namespace SaveAllTheTime.Models
 
         public static UserSettings Load()
         {
-            return JsonConvert.DeserializeObject<UserSettings>(File.ReadAllText(userSettingsPath, Encoding.UTF8));
+            try {
+                return JsonConvert.DeserializeObject<UserSettings>(File.ReadAllText(userSettingsPath, Encoding.UTF8));
+            } catch (Exception ex) {
+                LogHost.Default.ErrorException("Couldn't load settings, creating them from scratch", ex);
+                return new UserSettings();
+            }
         }
 
         public IDisposable AutoSave()
         {
-            return this.AutoPersist(x => 
-                File.WriteAllText(userSettingsPath, JsonConvert.SerializeObject(this), Encoding.UTF8));
+            return this.AutoPersist(x => Observable.Start(() =>
+                File.WriteAllText(userSettingsPath, JsonConvert.SerializeObject(x), Encoding.UTF8)));
         }
 
         public UserSettings()

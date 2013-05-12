@@ -20,6 +20,7 @@ using SaveAllTheTime.ViewModels;
 using SaveAllTheTime.Views;
 using System.Reactive.Disposables;
 using ReactiveUI;
+using SaveAllTheTime.Models;
 
 namespace SaveAllTheTime
 {
@@ -39,10 +40,14 @@ namespace SaveAllTheTime
         readonly DTE _dte;
         IDisposable _inner;
 
+        static UserSettings settings;
+
         static SaveAllTheTimeAdornment()
         {
             // NB: This is a bug in ReactiveUI :-/
             RxApp.MainThreadScheduler = DispatcherScheduler.Current;
+            settings = UserSettings.Load();
+            settings.AutoSave();
         }
 
         /// <summary>
@@ -57,7 +62,7 @@ namespace SaveAllTheTime
             _dte = dte;
 
             var commitControl = new CommitHintView() { 
-                ViewModel = new CommitHintViewModel(getFilePathFromView(_view), this),
+                ViewModel = new CommitHintViewModel(getFilePathFromView(_view), this, settings),
             };
 
             var disp = new CompositeDisposable();

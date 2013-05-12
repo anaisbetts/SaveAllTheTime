@@ -32,7 +32,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             var watch = Substitute.For<IFilesystemWatchCache>();
             watch.Register(null).ReturnsForAnyArgs(Observable.Never<IList<string>>());
 
-            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
+            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), null, ops, watch);
 
             this.Log().Info("Protocol URL: {0}", fixture.ProtocolUrl);
             Assert.False(fixture.Open.CanExecute(null));
@@ -50,7 +50,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             var watch = Substitute.For<IFilesystemWatchCache>();
             watch.Register(null).ReturnsForAnyArgs(Observable.Never<IList<string>>());
 
-            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
+            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), null, ops, watch);
 
             this.Log().Info("Protocol URL: {0}", fixture.ProtocolUrl);
             Assert.False(fixture.Open.CanExecute(null));
@@ -69,7 +69,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             watch.Register(null).ReturnsForAnyArgs(Observable.Never<IList<string>>());
 
             var vs = Substitute.For<IVisualStudioOps>();
-            var fixture = new CommitHintViewModel(filename, vs, ops, watch);
+            var fixture = new CommitHintViewModel(filename, vs, null, ops, watch);
             Assert.True(fixture.Open.CanExecute(null));
 
             fixture.Open.Execute(null);
@@ -95,7 +95,7 @@ namespace SaveAllTheTime.Tests.ViewModels
             watch.Register(null).ReturnsForAnyArgs(countingObs);
             Assert.Equal(0, subscriptionCount);
 
-            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), ops, watch);
+            var fixture = new CommitHintViewModel(filename, Substitute.For<IVisualStudioOps>(), null, ops, watch);
             Assert.NotEqual(0, subscriptionCount);
 
             fixture.Dispose();
