@@ -17,6 +17,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Diagnostics;
 using SaveAllTheTime.ViewModels;
+using ReactiveUI.Xaml;
 
 namespace SaveAllTheTime.Views
 {
@@ -29,7 +30,10 @@ namespace SaveAllTheTime.Views
         {
             InitializeComponent();
 
-            this.WhenAnyObservable(x => x.ViewModel.Open.CanExecuteObservable)
+            Observable.CombineLatest(
+                    this.WhenAnyObservable(x => x.ViewModel.Open.CanExecuteObservable),
+                    this.WhenAny(x => x.ViewModel.UserSettings.ShouldHideCommitWidget, x => x.Value),
+                    (canOpen, shouldHide) => canOpen && !shouldHide)
                 .BindTo(this, x => x.visualRoot.Visibility);
 
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
@@ -72,7 +76,6 @@ namespace SaveAllTheTime.Views
                         "Death to Widgets", MessageBoxButton.YesNo);
 
                     if (result == MessageBoxResult.No) return;
-                    visualRoot.Visibility = Visibility.Collapsed;
                     ViewModel.UserSettings.ShouldHideCommitWidget = true;
                 });
 
