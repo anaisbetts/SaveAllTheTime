@@ -1,0 +1,12 @@
+Version 1.2:
+* SaveAllTheTime now detects solution and designer changes and saves them too.
+  Thanks @jaredpar!
+* SaveAllTheTime will now display the commit widget for any Git repo, even ones
+  hosted at terrible places like CodePlex or BitBucket.
+
+Version 1.1:
+* SaveAllTheTime now displays a widget reminding you to commit if you haven't
+  done so in awhile.
+
+Version 1.0:
+* Initial release
