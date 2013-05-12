@@ -164,6 +164,11 @@
 
         <Border Background="#22888888" Margin="0,0,48,32" CornerRadius="6" Width="40" Height="40" Cursor="Hand" ForceCursor="True">
             <Button x:Name="Open" Style="{DynamicResource NoChromeButton}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <Button.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem x:Name="GoAway" Header="Go Away" />
+                    </ContextMenu>
+                </Button.ContextMenu>
                 <Grid Background="#01000000">
                     <Viewbox x:Name="viewbox1" Stretch="Uniform" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" Opacity="0">
                     	<Viewbox.RenderTransform>

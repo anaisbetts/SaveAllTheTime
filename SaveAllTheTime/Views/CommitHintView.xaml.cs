@@ -56,6 +56,26 @@ namespace SaveAllTheTime.Views
                     x => x.ViewModel.RefreshStatus.ThrownExceptions)
                 .Subscribe(_ => VisualStateManager.GoToElementState(visualRoot, "Error", true));
 
+            Observable.FromEventPattern<MouseButtonEventHandler, MouseButtonEventArgs>(x => visualRoot.PreviewMouseUp += x, x => visualRoot.PreviewMouseUp += x)
+                .Where(x => x.EventArgs.ChangedButton == MouseButton.Right)
+                .Subscribe(x => {
+                    Open.ContextMenu.IsOpen = true;
+                    x.EventArgs.Handled = true;
+                });
+
+            this.BindCommand(ViewModel, x => x.GoAway, x => x.GoAway);
+
+            this.WhenAnyObservable(x => x.ViewModel.GoAway)
+                .Subscribe(_ => {
+                    var result = MessageBox.Show(
+                        "This will hide the commit widget for good. Are you sure?", 
+                        "Death to Widgets", MessageBoxButton.YesNo);
+
+                    if (result == MessageBoxResult.No) return;
+                    visualRoot.Visibility = Visibility.Collapsed;
+                    ViewModel.UserSettings.ShouldHideCommitWidget = true;
+                });
+
             /* Uncomment this and the XAML section if you want to test the
              * transitions over time
             this.Bind(ViewModel, x => x.MinutesTimeOverride, x => x.MinutesTimeOverride.Value);
