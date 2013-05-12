@@ -72,7 +72,7 @@ namespace SaveAllTheTime.Views
             this.WhenAnyObservable(x => x.ViewModel.GoAway)
                 .Subscribe(_ => {
                     var result = MessageBox.Show(
-                        "This will hide the commit widget for good. Are you sure?", 
+                        "This will hide the commit widget for good. Automatic saving will still happen in the background.\n\nAre you sure you don't like this widget?", 
                         "Death to Widgets", MessageBoxButton.YesNo);
 
                     if (result == MessageBoxResult.No) return;
