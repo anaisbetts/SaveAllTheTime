@@ -119,6 +119,60 @@ namespace SaveAllTheTime
             // NB: We use the message bus here, because we want to effectively
             // merge all of the text change notifications from any document
             MessageBus.Current.RegisterMessageSource(documentChanged, "AnyDocumentChanged");
+
+            CheckAlreadyOpenDocuments(vsServiceProvider);
+        }
+
+        /// <summary>
+        /// It is possible that this class is created after documents are already open in the solution.  This 
+        /// means we won't get the show / opened events until the user once again brings them back into 
+        /// focus.  Hence do a quick search of the open IVsWindowFrame instances and setup the event listening
+        /// on them.
+        /// 
+        /// This problem does not exist for IWpfTextView instances.  This type implements IWpfTextViewCreationListener
+        /// and hence will be around for every single IWpfTextView that is created. 
+        /// </summary>
+        void CheckAlreadyOpenDocuments(SVsServiceProvider vsServiceProvider)
+        {
+            var vsShell = (IVsUIShell)vsServiceProvider.GetService(typeof(SVsUIShell));
+            var vsWindowFrames = vsShell.GetDocumentWindowFrames();
+            foreach (var vsWindowFrame in vsWindowFrames) {
+                CheckSubscribe(vsWindowFrame);
+            }
+
+            if (vsWindowFrames.Count > 0) {
+                RaiseChanged();
+            }
+        }
+
+        void CheckSubscribe(IVsWindowFrame vsWindowFrame)
+        {
+            if (_vsWindowFrameSet.Contains(vsWindowFrame)) {
+                return;
+            }
+
+            // Even though project files are in the running document table events about their dirty state are not always 
+            // properly raised by Visual Studio.  In particular when they are modified via the project property 
+            // designer (aka application designer).  However these IVsWindowFrame implementations do implement the 
+            // INotifyPropertyChanged interface and we can hook into the IsDocumentDirty property instead
+            //
+            // This is an implementation detail of IVsWindowFrame (specifically WindowFrame inside the DLL 
+            // Microsoft.VisualStudio.Platform.WindowManagement).  Hence it can change from version to version of 
+            // Visual Studio.  But this is the behavior in 2010+ and unlikely to change.  Need to be aware of these
+            // potential break though going forward 
+            var notifyPropertyChanged = vsWindowFrame as INotifyPropertyChanged;
+            var vsWindowFrame2 = vsWindowFrame as IVsWindowFrame2;
+            if (notifyPropertyChanged == null || vsWindowFrame2 == null) {
+                return;
+            }
+
+            var vsWindowFrameMonitor = new VsWindowFrameMonitor(this, vsWindowFrame);
+            if (!ErrorHandler.Succeeded(vsWindowFrame2.Advise(vsWindowFrameMonitor, out vsWindowFrameMonitor.Cookie))) {
+                return;
+            }
+
+            notifyPropertyChanged.PropertyChanged += OnNotifyPropertyChanged;
+            _vsWindowFrameSet.Add(vsWindowFrame);
         }
 
         void RaiseChanged()
@@ -219,32 +273,7 @@ namespace SaveAllTheTime
 
         public int OnBeforeDocumentWindowShow(uint docCookie, int fFirstShow, IVsWindowFrame vsWindowFrame)
         {
-            if (_vsWindowFrameSet.Contains(vsWindowFrame)) {
-                return VSConstants.S_OK;
-            }
-
-            // Even though project files are in the running document table events about their dirty state are not always 
-            // properly raised by Visual Studio.  In particular when they are modified via the project property 
-            // designer (aka application designer).  However these IVsWindowFrame implementations do implement the 
-            // INotifyPropertyChanged interface and we can hook into the IsDocumentDirty property instead
-            //
-            // This is an implementation detail of IVsWindowFrame (specifically WindowFrame inside the DLL 
-            // Microsoft.VisualStudio.Platform.WindowManagement).  Hence it can change from version to version of 
-            // Visual Studio.  But this is the behavior in 2010+ and unlikely to change.  Need to be aware of these
-            // potential break though going forward 
-            var notifyPropertyChanged = vsWindowFrame as INotifyPropertyChanged;
-            var vsWindowFrame2 = vsWindowFrame as IVsWindowFrame2;
-            if (notifyPropertyChanged == null || vsWindowFrame2 == null) {
-                return VSConstants.S_OK;
-            }
-
-            var vsWindowFrameMonitor = new VsWindowFrameMonitor(this, vsWindowFrame);
-            if (!ErrorHandler.Succeeded(vsWindowFrame2.Advise(vsWindowFrameMonitor, out vsWindowFrameMonitor.Cookie))) {
-                return VSConstants.S_OK;
-            }
-
-            notifyPropertyChanged.PropertyChanged += OnNotifyPropertyChanged;
-            _vsWindowFrameSet.Add(vsWindowFrame);
+            CheckSubscribe(vsWindowFrame);
             return VSConstants.S_OK;
         }
 
