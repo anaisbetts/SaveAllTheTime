@@ -121,24 +121,15 @@ namespace SaveAllTheTime.Models
             return (isGhfwInstalled = true).Value;
         }
 
-        internal static string protocolUrlForRemoteUrl(string remoteUrl)
+        internal string protocolUrlForRemoteUrl(string remoteUrl)
         {
-            // Either https://github.com/reactiveui/ReactiveUI.git or
-            // git@github.com:reactiveui/ReactiveUI.git
-
-            var nwo = default(string);
-            if (remoteUrl.StartsWith("https://github.com")) {
-                nwo = remoteUrl.Replace("https://github.com/", "");
-            } else if (remoteUrl.StartsWith("git@github.com")) {
-                nwo = remoteUrl.Replace("git@github.com:", "");
-            }
-
-            if (nwo == null) {
+            try {
+                var uri = new Uri(String.Format("github-windows://openRepo/{0}", remoteUrl));
+                return uri.ToString();
+            } catch (Exception ex) {
+                this.Log().Warn("Tried to use bogus remote URL: " + remoteUrl, ex);
                 return null;
             }
-
-            nwo = (new Regex(".git$")).Replace(nwo, "");
-            return String.Format("github-windows://openRepo/https://github.com/{0}", nwo);
         }
 
         static MemoizingMRUCache<string, string> findGitRepoCache = new MemoizingMRUCache<string, string>(
