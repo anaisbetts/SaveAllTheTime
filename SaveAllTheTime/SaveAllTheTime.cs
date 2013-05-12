@@ -32,12 +32,11 @@ namespace SaveAllTheTime
     /// <summary>
     /// Adornment class that draws a square box in the top right hand corner of the viewport
     /// </summary>
-    sealed class SaveAllTheTimeAdornment : IDisposable, IVisualStudioOps
+    sealed class SaveAllTheTimeAdornment : IDisposable
     {
         readonly IWpfTextView _view;
         readonly IAdornmentLayer _adornmentLayer;
 
-        readonly DTE _dte;
         IDisposable _inner;
 
         static UserSettings settings;
@@ -45,6 +44,9 @@ namespace SaveAllTheTime
         static SaveAllTheTimeAdornment()
         {
             // NB: This is a bug in ReactiveUI :-/
+            if (MessageBus.Current == null) {
+                MessageBus.Current = new MessageBus();
+            }
             RxApp.MainThreadScheduler = DispatcherScheduler.Current;
             settings = UserSettings.Load();
             settings.AutoSave();
@@ -55,14 +57,13 @@ namespace SaveAllTheTime
         /// adds the the square in the upper right-hand corner of the TextView via the adornment layer
         /// </summary>
         /// <param name="view">The <see cref="IWpfTextView"/> upon which the adornment will be drawn</param>
-        public SaveAllTheTimeAdornment(IWpfTextView view, ICompletionBroker completionBroker, DTE dte)
+        public SaveAllTheTimeAdornment(IWpfTextView view, IVisualStudioOps vsOps)
         {
             _view = view;
             _adornmentLayer = view.GetAdornmentLayer("SaveAllTheTimeAdornment");
-            _dte = dte;
 
             var commitControl = new CommitHintView() { 
-                ViewModel = new CommitHintViewModel(getFilePathFromView(_view), this, settings),
+                ViewModel = new CommitHintViewModel(getFilePathFromView(_view), vsOps, settings),
             };
 
             var disp = new CompositeDisposable();
@@ -88,17 +89,6 @@ namespace SaveAllTheTime
 
             disp.Add(Disposable.Create(() => _adornmentLayer.RemoveAllAdornments()));
 
-            var textChanged = Observable.FromEventPattern<TextContentChangedEventArgs>(x => _view.TextBuffer.Changed += x, x => _view.TextBuffer.Changed -= x)
-                .Throttle(TimeSpan.FromSeconds(2.0), RxApp.MainThreadScheduler)
-                .Where(_ => !completionBroker.IsCompletionActive(_view))
-                .Select(_ => Unit.Default);
-
-            disp.Add(textChanged.Subscribe(_ => commitControl.Dispatcher.BeginInvoke(new Action(SaveAll))));
-
-            // NB: We use the message bus here, because we want to effectively
-            // merge all of the text change notifications from any document
-            disp.Add(MessageBus.Current.RegisterMessageSource(textChanged, "AnyDocumentChanged"));
-
             disp.Add(Observable.FromEventPattern<EventHandler, EventArgs>(x => _view.Closed += x, x => _view.Closed -= x)
                 .Subscribe(_ => Dispose()));
 
@@ -123,15 +113,6 @@ namespace SaveAllTheTime
             if (doc == null) return null;
 
             return doc.FilePath;
-        }
-
-        public void SaveAll()
-        {
-            try {
-                _dte.ExecuteCommand("File.SaveAll");
-            } catch (Exception) {
-                // RIP Saving
-            }
         }
     }
 }
