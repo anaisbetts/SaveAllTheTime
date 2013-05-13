@@ -21,6 +21,13 @@ namespace SaveAllTheTime.Models
             set { this.RaiseAndSetIfChanged(ref _ShouldHideCommitWidget, value); }
         }
 
+        bool _HasShownTFSGitWarning;
+        [DataMember]
+        public bool HasShownTFSGitWarning {
+            get { return _HasShownTFSGitWarning; }
+            set { this.RaiseAndSetIfChanged(ref _HasShownTFSGitWarning, value); }
+        }
+
         public static UserSettings Load()
         {
             try {
