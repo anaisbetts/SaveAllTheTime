@@ -33,7 +33,8 @@ namespace SaveAllTheTime.Views
             Observable.CombineLatest(
                     this.WhenAny(x => x.ViewModel.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)),
                     this.WhenAny(x => x.ViewModel.UserSettings.ShouldHideCommitWidget, x => x.Value),
-                    (hasRepoPath, shouldHide) => hasRepoPath && !shouldHide)
+                    this.WhenAny(x => x.ViewModel.IsTfsGitInstalled, x => x.Value),
+                    (hasRepoPath, shouldHide, tfsGitInstalled) => hasRepoPath && !shouldHide && !tfsGitInstalled)
                 .BindTo(this, x => x.visualRoot.Visibility);
 
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
@@ -85,6 +86,13 @@ namespace SaveAllTheTime.Views
 
                     if (result == MessageBoxResult.No) return;
                     ViewModel.UserSettings.ShouldHideCommitWidget = true;
+                });
+
+            this.WhenAnyObservable(x => x.ViewModel.ShowTFSGitWarning)
+                .Subscribe(x => {
+                    var msg = "SaveAllTheTime is disabling some features due to a known conflict with the Visual Studio tools for Git extension.\n\n" +
+                        "We're working to fix this tout suite, but for now, only automatic saving will work.";
+                    MessageBox.Show(msg, "Too much libgit2 to handle!", MessageBoxButton.OK);
                 });
 
             /* Uncomment this and the XAML section if you want to test the

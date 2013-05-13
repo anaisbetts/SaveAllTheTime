@@ -217,6 +217,18 @@ namespace SaveAllTheTime
             }
         }
 
+        static bool? isTFSGitPluginInstalled;
+        public bool IsTFSGitPluginInstalled()
+        {
+            // NB: This is hacky hacky hack.
+            if (isTFSGitPluginInstalled != null) return isTFSGitPluginInstalled.Value;
+
+
+            isTFSGitPluginInstalled = AppDomain.CurrentDomain.GetAssemblies().Any(x =>
+                x.FullName.ToLowerInvariant().Contains("teamfoundation.git.provider"));
+            return isTFSGitPluginInstalled.Value;
+        }
+
         #endregion
 
         #region IWpfTextViewCreationListener
