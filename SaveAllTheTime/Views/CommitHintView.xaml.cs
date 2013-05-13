@@ -88,11 +88,10 @@ namespace SaveAllTheTime.Views
                     ViewModel.UserSettings.ShouldHideCommitWidget = true;
                 });
 
-
             this.WhenAnyObservable(x => x.ViewModel.ShowTFSGitWarning)
                 .Subscribe(x => {
-                    var msg = "SaveAllTheTime is disabling some features due to a known conflict with the Git Extensions for Visual Studio.\n\n" +
-                        "This will be fixed in a future release, but for now, only automatic saving will work.";
+                    var msg = "SaveAllTheTime is disabling some features due to a known conflict with the Visual Studio tools for Git extension.\n\n" +
+                        "We're working to fix this tout suite, but for now, only automatic saving will work.";
                     MessageBox.Show(msg, "Too much libgit2 to handle!", MessageBoxButton.OK);
                 });
 

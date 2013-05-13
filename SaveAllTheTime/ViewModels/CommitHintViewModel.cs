@@ -165,10 +165,14 @@ namespace SaveAllTheTime.ViewModels
                 })
                 .Subscribe(hintState);
 
-            if (IsTfsGitInstalled && !settings.HasShownTFSGitWarning) {
-                this.ShowTFSGitWarning.Execute(null);
-                settings.HasShownTFSGitWarning = true;
-            }
+            // NB: This is scheduled to give the View time to subscribe to
+            // ShowTFSGitWarning.
+            RxApp.MainThreadScheduler.Schedule(() => {
+                if (IsTfsGitInstalled && !settings.HasShownTFSGitWarning) {
+                    this.ShowTFSGitWarning.Execute(null);
+                    settings.HasShownTFSGitWarning = true;
+                }
+            });
 
             // NB: Because _LastRepoCommitTime at the end of the day creates a
             // FileSystemWatcher, we have to dispose it or else we'll get FSW 
