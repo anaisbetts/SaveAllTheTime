@@ -1,3 +1,10 @@
+Version 1.2.1:
+* Maintenance Release
+* Fix NLog logging
+* Performance enhancements
+* Disable ourselves when Git Extensions for Visual Studio
+* Add help link
+
 Version 1.2:
 * SaveAllTheTime now detects solution and designer changes and saves them too.
   Thanks @jaredpar!
