@@ -54,6 +54,9 @@ namespace SaveAllTheTime
     {
         public static void Initialize()
         {
+            var reg = new ReactiveUI.NLog.Registrations();
+            reg.Register((f, t) => ((ModernDependencyResolver)RxApp.DependencyResolver).Register(f, t));
+
 #if DEBUG
             var debugTarget = new DebuggerTarget() {
                 Name = "debug",

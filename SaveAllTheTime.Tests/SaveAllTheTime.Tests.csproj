@@ -58,6 +58,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\reactiveui-platforms.5.0.0.20130512-alpha\lib\net45\ReactiveUI.Blend.dll</HintPath>
     </Reference>
+    <Reference Include="ReactiveUI.NLog">
+      <HintPath>..\packages\reactiveui-nlog.5.0.0.20130512-alpha\lib\net45\ReactiveUI.NLog.dll</HintPath>
+    </Reference>
     <Reference Include="ReactiveUI.Testing, Version=5.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\reactiveui-testing.5.0.0.20130512-alpha\lib\net45\ReactiveUI.Testing.dll</HintPath>
