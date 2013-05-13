@@ -38,6 +38,7 @@ namespace SaveAllTheTime.Models
                 disp.Add(allEvents
                     .Select(x => x.EventArgs.FullPath)
                     .Buffer(TimeSpan.FromMilliseconds(250), RxApp.TaskpoolScheduler)
+                    .Where(x => x.Count > 0)
                     .Synchronize(subj)
                     .Subscribe(subj));
 
