@@ -81,6 +81,7 @@ namespace SaveAllTheTime.ViewModels
         public bool IsTfsGitInstalled { get; protected set; }
 
         public ReactiveCommand Open { get; protected set; }
+        public ReactiveCommand HelpMe { get; protected set; }
         public ReactiveCommand GoAway { get; protected set; }
         public ReactiveAsyncCommand RefreshStatus { get; protected set; }
         public ReactiveAsyncCommand RefreshLastCommitTime { get; protected set; }
@@ -113,6 +114,7 @@ namespace SaveAllTheTime.ViewModels
             RefreshStatus = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
             RefreshLastCommitTime = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
             ShowTFSGitWarning = new ReactiveCommand();
+            HelpMe = new ReactiveCommand();
 
             var repoWatchSub = this.WhenAny(x => x.RepoPath, x => x.Value)
                 .Where(x => !String.IsNullOrWhiteSpace(x) && !IsTfsGitInstalled)

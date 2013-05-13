@@ -77,6 +77,7 @@ namespace SaveAllTheTime.Views
                 });
 
             this.BindCommand(ViewModel, x => x.GoAway, x => x.GoAway);
+            this.BindCommand(ViewModel, x => x.HelpMe, x => x.HelpMe);
 
             this.WhenAnyObservable(x => x.ViewModel.GoAway)
                 .Subscribe(_ => {
@@ -93,6 +94,11 @@ namespace SaveAllTheTime.Views
                     var msg = "SaveAllTheTime is disabling some features due to a known conflict with the Visual Studio tools for Git extension.\n\n" +
                         "We're working to fix this tout suite, but for now, only automatic saving will work.";
                     MessageBox.Show(msg, "Too much libgit2 to handle!", MessageBoxButton.OK);
+                });
+
+            this.WhenAnyObservable(x => x.ViewModel.HelpMe)
+                .Subscribe(x => {
+                    Process.Start(@"https://plus.google.com/communities/104866637765202366968");
                 });
 
             /* Uncomment this and the XAML section if you want to test the

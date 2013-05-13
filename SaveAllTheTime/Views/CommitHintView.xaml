@@ -167,6 +167,7 @@
                 <Button.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="GoAway" Header="Go Away" />
+                        <MenuItem x:Name="HelpMe" Header="Ask for Help / Report Issue" />
                     </ContextMenu>
                 </Button.ContextMenu>
                 <Grid Background="#01000000">
