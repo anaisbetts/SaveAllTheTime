@@ -21,6 +21,7 @@ using SaveAllTheTime.Views;
 using System.Reactive.Disposables;
 using ReactiveUI;
 using SaveAllTheTime.Models;
+using System.IO;
 
 namespace SaveAllTheTime
 {
@@ -58,8 +59,14 @@ namespace SaveAllTheTime
             _view = view;
             _adornmentLayer = view.GetAdornmentLayer("SaveAllTheTimeAdornment");
 
+            var filePath = getFilePathFromView(_view);
+            if (shouldSuppressAdornment(filePath)) {
+                _inner = Disposable.Empty;
+                return;
+            }
+
             var commitControl = new CommitHintView() { 
-                ViewModel = new CommitHintViewModel(getFilePathFromView(_view), vsOps, settings),
+                ViewModel = new CommitHintViewModel(filePath, vsOps, settings),
             };
 
             var disp = new CompositeDisposable();
@@ -96,8 +103,8 @@ namespace SaveAllTheTime
             disp.Add(Observable.FromEventPattern<EventHandler, EventArgs>(x => _view.Closed += x, x => _view.Closed -= x)
                 .Subscribe(_ => Dispose()));
 
-            disp.Add(commitControl.ViewModel);
             _inner = disp;
+            disp.Add(commitControl.ViewModel);
         }
 
         public void Dispose()
@@ -106,6 +113,19 @@ namespace SaveAllTheTime
             if (disp != null) {
                 disp.Dispose();
             }
+        }
+
+        bool shouldSuppressAdornment(string filePath)
+        {
+            if (String.IsNullOrWhiteSpace(filePath)) return true;
+            if (!File.Exists(filePath)) return true;
+
+            var toLower = filePath.ToLowerInvariant();
+            if (toLower.Contains("jetbrains") && toLower.Contains("solutioncache")) {
+                return true;
+            }
+
+            return false;
         }
 
         string getFilePathFromView(IWpfTextView textView)
