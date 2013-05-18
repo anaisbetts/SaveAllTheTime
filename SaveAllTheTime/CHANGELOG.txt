@@ -1,3 +1,6 @@
+Version 1.2.2:
+* Attempt to fix Resharper compatibility issues
+
 Version 1.2.1:
 * Maintenance Release
 * Fix NLog logging
