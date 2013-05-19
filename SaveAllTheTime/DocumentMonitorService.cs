@@ -98,10 +98,14 @@ namespace SaveAllTheTime
             _completionBroker = completionBroker;
             _dte = (DTE)vsServiceProvider.GetService(typeof(_DTE));
 
+            // NB: Resharper somehow fucks with this event, we need to do as 
+            // little as possible in the event handler itself
             var documentChanged = Observable.FromEventPattern(x => _changed += x, x => _changed -= x)
-                .Throttle(TimeSpan.FromSeconds(2.0), RxApp.MainThreadScheduler)
+                .ObserveOn(RxApp.TaskpoolScheduler)
+                .Throttle(TimeSpan.FromSeconds(2.0), RxApp.TaskpoolScheduler)
                 .Where(_ => !IsCompletionActive())
-                .Select(_ => Unit.Default);
+                .Select(_ => Unit.Default)
+                .ObserveOn(RxApp.MainThreadScheduler);
 
             var dispatcher = Dispatcher.CurrentDispatcher;
             documentChanged.Subscribe(_ => dispatcher.BeginInvoke(new Action(() => SaveAll())));
