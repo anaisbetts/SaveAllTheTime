@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="SaveAllTheTime..e5079769-4785-4c30-88d0-6d570504b964" Version="1.2.2" Language="en-US" Publisher="Paul Betts" />
+    <Identity Id="SaveAllTheTime..e5079769-4785-4c30-88d0-6d570504b964" Version="1.2.3" Language="en-US" Publisher="Paul Betts" />
     <DisplayName>SaveAllTheTime</DisplayName>
     <Description xml:space="preserve">SaveAllTheTime makes it so you never commit files to Git without saving ever again. It also reminds you to commit often by showing you a widget at the bottom right corner of your screen</Description>
     <MoreInfo>http://xpaulbettsx.github.io/SaveAllTheTime/</MoreInfo>
