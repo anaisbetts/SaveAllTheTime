@@ -78,8 +78,6 @@ namespace SaveAllTheTime.ViewModels
             get { return _LatestRepoStatus.Value; }
         }
 
-        public bool IsTfsGitInstalled { get; protected set; }
-
         public ReactiveCommand Open { get; protected set; }
         public ReactiveCommand HelpMe { get; protected set; }
         public ReactiveCommand GoAway { get; protected set; }
@@ -94,7 +92,6 @@ namespace SaveAllTheTime.ViewModels
             _gitRepoOps = gitRepoOps ?? new GitRepoOps();
             UserSettings = settings ?? new UserSettings();
 
-            IsTfsGitInstalled = vsOps.IsTFSGitPluginInstalled();
             IsGitHubForWindowsInstalled = _gitRepoOps.IsGitHubForWindowsInstalled();
 
             this.Log().Info("Starting Commit Hint for {0}", filePath);
@@ -117,7 +114,7 @@ namespace SaveAllTheTime.ViewModels
             HelpMe = new ReactiveCommand();
 
             var repoWatchSub = this.WhenAny(x => x.RepoPath, x => x.Value)
-                .Where(x => !String.IsNullOrWhiteSpace(x) && !IsTfsGitInstalled)
+                .Where(x => !String.IsNullOrWhiteSpace(x))
                 .Select(x => watchCache.Register(Path.Combine(x, ".git", "refs")).Select(_ => x))
                 .Switch()
                 .InvokeCommand(RefreshLastCommitTime);
@@ -134,7 +131,7 @@ namespace SaveAllTheTime.ViewModels
 
             var refreshDisp = this.WhenAny(x => x.LastTextActiveTime, x => Unit.Default)
                 .Buffer(TimeSpan.FromSeconds(5), RxApp.TaskpoolScheduler)
-                .Where(x => x.Count > 0 && !IsTfsGitInstalled)
+                .Where(x => x.Count > 0)
                 .StartWith(new List<Unit> { Unit.Default })
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .InvokeCommand(RefreshStatus);
@@ -166,15 +163,6 @@ namespace SaveAllTheTime.ViewModels
                     return CommitHintState.Green;
                 })
                 .Subscribe(hintState);
-
-            // NB: This is scheduled to give the View time to subscribe to
-            // ShowTFSGitWarning.
-            RxApp.MainThreadScheduler.Schedule(() => {
-                if (IsTfsGitInstalled && !settings.HasShownTFSGitWarning) {
-                    this.ShowTFSGitWarning.Execute(null);
-                    settings.HasShownTFSGitWarning = true;
-                }
-            });
 
             // NB: Because _LastRepoCommitTime at the end of the day creates a
             // FileSystemWatcher, we have to dispose it or else we'll get FSW 

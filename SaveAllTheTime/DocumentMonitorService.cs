@@ -223,31 +223,6 @@ namespace SaveAllTheTime
             }
         }
 
-        static readonly Guid TFSGitProviderPackageGuid = new Guid("7FE30A77-37F9-4CF2-83DD-96B207028E1B");
-        static bool? isTFSGitPluginInstalled;
-
-        public bool IsTFSGitPluginInstalled()
-        {
-            if (!isTFSGitPluginInstalled.HasValue) {
-
-                // The intent of this method is to determine if TFS Git is in a mode which will interfere with
-                // our extension.  As an implementation detail we check for the loaded state vs installed.  In
-                // user terms loaded == enabled and only enabled extensions contribute DLLs to the instance
-                // of Visual Studio.  An extension which is installed but disabled contributes nothing and 
-                // won't interfere with our extension.  
-                //
-                // This is a handy distinction for users which occasionally need to work with TFS Git on their
-                // box.  They can enable / disable which is much faster than install / uninstall 
-
-                var guid = TFSGitProviderPackageGuid;
-                var vsShell = (IVsShell)_vsServiceProvider.GetService(typeof(SVsShell));
-                IVsPackage vsPackage;
-                isTFSGitPluginInstalled = ErrorHandler.Succeeded(vsShell.IsPackageLoaded(ref guid, out vsPackage)) && vsPackage != null;
-            }
-
-            return isTFSGitPluginInstalled.Value;
-        }
-
         #endregion
 
         #region IWpfTextViewCreationListener
