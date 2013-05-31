@@ -33,8 +33,7 @@ namespace SaveAllTheTime.Views
             Observable.CombineLatest(
                     this.WhenAny(x => x.ViewModel.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)),
                     this.WhenAny(x => x.ViewModel.UserSettings.ShouldHideCommitWidget, x => x.Value),
-                    this.WhenAny(x => x.ViewModel.IsTfsGitInstalled, x => x.Value),
-                    (hasRepoPath, shouldHide, tfsGitInstalled) => hasRepoPath && !shouldHide && !tfsGitInstalled)
+                    (hasRepoPath, shouldHide)  => hasRepoPath && !shouldHide)
                 .BindTo(this, x => x.visualRoot.Visibility);
 
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())

@@ -28,7 +28,6 @@ namespace SaveAllTheTime
     public interface IVisualStudioOps
     {
         void SaveAll();
-        bool IsTFSGitPluginInstalled();
     }
 
     /// <summary>
