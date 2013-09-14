@@ -75,8 +75,8 @@ namespace SaveAllTheTime.Models
                         throw new Exception("Couldn't find commit");
                     }
 
-                    this.Log().Debug("Last Commit Time: {0}", repo.Head.Tip.Author.When);
-                    return repo.Head.Tip.Author.When;
+                    this.Log().Debug("Last Commit Time: {0}", repo.Head.Tip.Committer.When);
+                    return repo.Head.Tip.Committer.When;
                 } catch (Exception ex) {
                     this.Log().WarnException("Couldn't read commit time on repo: " + repoPath, ex);
                     throw;
