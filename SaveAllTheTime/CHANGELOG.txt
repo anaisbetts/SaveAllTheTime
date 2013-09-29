@@ -1,3 +1,6 @@
+Version 1.2.5:
+* Add support for Visual Studio 2013 RC
+
 Version 1.2.4:
 * Fix compatibility issues with Visual Studio Tools for Git
 
