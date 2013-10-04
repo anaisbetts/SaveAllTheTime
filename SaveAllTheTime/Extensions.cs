@@ -4,6 +4,11 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace SaveAllTheTime
 {
+    using System;
+    using System.Linq;
+
+    using EnvDTE;
+
     internal static class Extensions
     {
         internal static List<IVsWindowFrame> GetDocumentWindowFrames(this IVsUIShell vsShell)
@@ -34,6 +39,54 @@ namespace SaveAllTheTime
 
                 for (var i = 0; i < num; i++) {
                     list.Add(array[i]);
+                }
+            }
+        }
+
+        internal static HashSet<string> GetProjectItemPaths(this Solution solution)
+        {
+            HashSet<string> items = new HashSet<string>();
+
+            foreach (string key in solution.Projects.Cast<Project>().SelectMany(x => AllProjectItems(x).Where(y => y.Properties != null).Select(y => y.Properties.Item("FullPath")).Where(z => z.Value != null).Select(z => z.Value.ToString())))
+            {
+                items.Add(key);
+            }
+
+            return items;
+        }
+
+        private static IEnumerable<ProjectItem> AllProjectItems(Project project)
+        {
+            if (project == null || project.ProjectItems == null)
+            {
+                yield break;
+            }
+
+            foreach (ProjectItem item in project.ProjectItems)
+            {
+                yield return item;
+
+                foreach (ProjectItem subitem in SubProjectItems(item))
+                {
+                    yield return subitem;
+                }
+            }
+        }
+
+        private static IEnumerable<ProjectItem> SubProjectItems(ProjectItem item)
+        {
+            if (item == null || item.ProjectItems == null)
+            {
+                yield break;
+            }
+
+            foreach (ProjectItem record in item.ProjectItems)
+            {
+                yield return record;
+
+                foreach (ProjectItem child in SubProjectItems(record))
+                {
+                    yield return child;
                 }
             }
         }

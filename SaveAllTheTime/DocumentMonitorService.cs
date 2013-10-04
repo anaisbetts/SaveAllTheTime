@@ -19,6 +19,8 @@ using ReactiveUI;
 
 namespace SaveAllTheTime
 {
+    using System.Runtime.InteropServices;
+
     [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(IVisualStudioOps))]
     [ContentType("any")]
@@ -91,6 +93,10 @@ namespace SaveAllTheTime
         /// </summary>
         HashSet<IVsWindowFrame> _vsWindowFrameSet = new HashSet<IVsWindowFrame>();
 
+        private readonly HashSet<string> _sessionDocumentsLookup = new HashSet<string>();
+
+        private readonly object _saveLock = new object();
+
         [ImportingConstructor]
         internal DocumentMonitorService(SVsServiceProvider vsServiceProvider, ICompletionBroker completionBroker)
         {
@@ -110,13 +116,43 @@ namespace SaveAllTheTime
                 .ObserveOn(RxApp.MainThreadScheduler);
 
             var dispatcher = Dispatcher.CurrentDispatcher;
-            documentChanged.Subscribe(_ => dispatcher.BeginInvoke(new Action(() => SaveAll())));
+            documentChanged.Subscribe(_ => dispatcher.BeginInvoke(new Action(() => System.Threading.Tasks.Task.Factory.StartNew(SaveAll))));
 
             // NB: We use the message bus here, because we want to effectively
             // merge all of the text change notifications from any document
             MessageBus.Current.RegisterMessageSource(documentChanged, "AnyDocumentChanged");
 
             CheckAlreadyOpenDocuments(vsServiceProvider);
+
+            _dte.Events.WindowEvents.WindowActivated += WindowEventsOnWindowActivated;
+        }
+
+        private void WindowEventsOnWindowActivated(Window gotFocus, Window lostFocus)
+        {
+            RaiseChanged();
+        }
+
+        private bool ShouldSaveActiveDocument()
+        {
+            string name = _dte.ActiveDocument.FullName;
+
+            if (name.EndsWith("resx", StringComparison.InvariantCulture))
+            {
+                return false;
+            }
+
+            if (_sessionDocumentsLookup.Contains(name))
+            {
+                return true;
+            }
+            
+            if (_dte.Solution.GetProjectItemPaths().Contains(name))
+            {
+                _sessionDocumentsLookup.Add(name);
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -215,8 +251,20 @@ namespace SaveAllTheTime
 
         public void SaveAll()
         {
-            try {
-                _dte.ExecuteCommand("File.SaveAll");
+            try
+            {
+                lock (_saveLock)
+                {
+                    if (!ShouldSaveActiveDocument())
+                    {
+                        return;
+                    }
+
+                    foreach (Document item in _dte.Documents.Cast<Document>().Where(item => !item.Saved))
+                    {
+                        item.Save();
+                    }
+                }
             }
             catch (Exception) {
 
