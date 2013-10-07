@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell.Interop;
 
 namespace SaveAllTheTime
 {
-    using System;
-    using System.Linq;
 
-    using EnvDTE;
 
     internal static class Extensions
     {
@@ -57,8 +56,7 @@ namespace SaveAllTheTime
 
         private static IEnumerable<ProjectItem> AllProjectItems(Project project)
         {
-            if (project == null || project.ProjectItems == null)
-            {
+            if (project == null || project.ProjectItems == null) {
                 yield break;
             }
 
@@ -75,8 +73,7 @@ namespace SaveAllTheTime
 
         private static IEnumerable<ProjectItem> SubProjectItems(ProjectItem item)
         {
-            if (item == null || item.ProjectItems == null)
-            {
+            if (item == null || item.ProjectItems == null) {
                 yield break;
             }
 
