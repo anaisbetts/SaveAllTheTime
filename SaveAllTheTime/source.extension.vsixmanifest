@@ -4,7 +4,7 @@
     <Identity Id="SaveAllTheTime..e5079769-4785-4c30-88d0-6d570504b964" Version="1.2.5" Language="en-US" Publisher="Paul Betts" />
     <DisplayName>SaveAllTheTime</DisplayName>
     <Description xml:space="preserve">SaveAllTheTime makes it so you never commit files to Git without saving ever again. It also reminds you to commit often by showing you a widget at the bottom right corner of your screen</Description>
-    <MoreInfo>http://xpaulbettsx.github.io/SaveAllTheTime/</MoreInfo>
+    <MoreInfo>http://paulcbetts.github.io/SaveAllTheTime</MoreInfo>
     <License>COPYING.txt</License>
     <ReleaseNotes>CHANGELOG.txt</ReleaseNotes>
     <Icon>media-floppy.png</Icon>
