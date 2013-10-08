@@ -1,3 +1,7 @@
+Version 1.2.6:
+* Fix bug where SaveAllTheTime would attempt to save files that were unnamed.
+  Thanks @davecmckeown!
+
 Version 1.2.5:
 * Add support for Visual Studio 2013 RC
 
