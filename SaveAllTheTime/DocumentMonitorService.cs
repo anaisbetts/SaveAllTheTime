@@ -23,7 +23,7 @@ namespace SaveAllTheTime
     [Export(typeof(IVisualStudioOps))]
     [ContentType("any")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
-    sealed class DocumentMonitorService : IWpfTextViewCreationListener, IVsRunningDocTableEvents, IVsRunningDocTableEvents2, IVisualStudioOps
+    sealed class DocumentMonitorService : IWpfTextViewCreationListener, IVsRunningDocTableEvents, IVsRunningDocTableEvents2, IVisualStudioOps, IEnableLogger
     {
         #region VsWindowFrameMonitor 
 
@@ -227,7 +227,7 @@ namespace SaveAllTheTime
                 foreach (Document item in _dte.Documents.Cast<Document>().Where(item => !item.Saved)) {
                     item.Save();
                 }
-            } catch (Exception) {
+            } catch (Exception ex) {
                 this.Log().WarnException("Failed to save all documents", ex);
             }
         }
