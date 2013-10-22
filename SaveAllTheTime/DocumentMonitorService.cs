@@ -25,8 +25,6 @@ namespace SaveAllTheTime
     [TextViewRole(PredefinedTextViewRoles.Document)]
     sealed class DocumentMonitorService : IWpfTextViewCreationListener, IVsRunningDocTableEvents, IVsRunningDocTableEvents2, IVisualStudioOps, IEnableLogger
     {
-        #region VsWindowFrameMonitor 
-
         /// <summary>
         /// The IVsWindowFrameNotify interfaces don't provide the IVsWindowFrame instance on which the events
         /// are being raised.  This type allows us to pair the events with the instance in question 
@@ -70,8 +68,6 @@ namespace SaveAllTheTime
                 return VSConstants.S_OK;
             }
         }
-
-        #endregion
 
         readonly SVsServiceProvider _vsServiceProvider;
         readonly ICompletionBroker _completionBroker;
@@ -215,8 +211,6 @@ namespace SaveAllTheTime
             return _openTextViewList.Any(x => _completionBroker.IsCompletionActive(x));
         }
 
-        #region IVisualStudioOps
-
         public void SaveAll()
         {
             try {
@@ -232,10 +226,6 @@ namespace SaveAllTheTime
             }
         }
 
-        #endregion
-
-        #region IWpfTextViewCreationListener
-
         public void TextViewCreated(IWpfTextView textView)
         {
             _openTextViewList.Add(textView);
@@ -246,10 +236,6 @@ namespace SaveAllTheTime
                 _openTextViewList.Remove(textView);
             };
         }
-
-        #endregion
-
-        #region IVsRunningDocTableEvents
 
         public int OnAfterAttributeChange(uint docCookie, uint grfAttribs)
         {
@@ -287,10 +273,6 @@ namespace SaveAllTheTime
             return VSConstants.S_OK;
         }
 
-        #endregion
-
-        #region IVsRunningDocTableEvents
-
         public int OnAfterAttributeChangeEx(uint docCookie, uint grfAttribs, IVsHierarchy pHierOld, uint itemidOld, string pszMkDocumentOld, IVsHierarchy pHierNew, uint itemidNew, string pszMkDocumentNew)
         {
             uint target = (uint)(__VSRDTATTRIB.RDTA_DocDataIsDirty);
@@ -300,8 +282,6 @@ namespace SaveAllTheTime
 
             return VSConstants.S_OK;
         }
-
-        #endregion
 
         bool ShouldSaveActiveDocument()
         {
