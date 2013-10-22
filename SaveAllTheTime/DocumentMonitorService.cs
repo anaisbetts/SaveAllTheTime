@@ -25,50 +25,6 @@ namespace SaveAllTheTime
     [TextViewRole(PredefinedTextViewRoles.Document)]
     sealed class DocumentMonitorService : IWpfTextViewCreationListener, IVsRunningDocTableEvents, IVsRunningDocTableEvents2, IVisualStudioOps, IEnableLogger
     {
-        /// <summary>
-        /// The IVsWindowFrameNotify interfaces don't provide the IVsWindowFrame instance on which the events
-        /// are being raised.  This type allows us to pair the events with the instance in question 
-        /// </summary>
-        sealed class VsWindowFrameMonitor : IVsWindowFrameNotify, IVsWindowFrameNotify2
-        {
-            readonly DocumentMonitorService _documentMonitorService;
-            readonly IVsWindowFrame _vsWindowFrame;
-
-            internal uint Cookie;
-
-            internal VsWindowFrameMonitor(DocumentMonitorService documentMonitorService, IVsWindowFrame vsWindowFrame)
-            {
-                _documentMonitorService = documentMonitorService;
-                _vsWindowFrame = vsWindowFrame;
-            }
-
-            public int OnClose(ref uint pgrfSaveOptions)
-            {
-                _documentMonitorService.OnVsWindowFrameClosed(_vsWindowFrame, Cookie);
-                return VSConstants.S_OK;
-            }
-
-            public int OnDockableChange(int fDockable)
-            {
-                return VSConstants.S_OK;
-            }
-
-            public int OnMove()
-            {
-                return VSConstants.S_OK;
-            }
-
-            public int OnShow(int fShow)
-            {
-                return VSConstants.S_OK;
-            }
-
-            public int OnSize()
-            {
-                return VSConstants.S_OK;
-            }
-        }
-
         readonly SVsServiceProvider _vsServiceProvider;
         readonly ICompletionBroker _completionBroker;
         readonly RunningDocumentTable _runningDocumentTable;
@@ -103,7 +59,7 @@ namespace SaveAllTheTime
             var documentChanged = Observable.FromEventPattern(x => _changed += x, x => _changed -= x)
                 .ObserveOn(RxApp.TaskpoolScheduler)
                 .Throttle(TimeSpan.FromSeconds(2.0), RxApp.TaskpoolScheduler)
-                .Where(_ => !IsCompletionActive())
+                .Where(_ => !isCompletionActive())
                 .Select(_ => Unit.Default)
                 .ObserveOn(RxApp.MainThreadScheduler);
 
@@ -114,9 +70,105 @@ namespace SaveAllTheTime
             // merge all of the text change notifications from any document
             MessageBus.Current.RegisterMessageSource(documentChanged, "AnyDocumentChanged");
 
-            CheckAlreadyOpenDocuments(vsServiceProvider);
+            checkAlreadyOpenDocuments(vsServiceProvider);
 
-            _dte.Events.WindowEvents.WindowActivated += (focus, lostFocus) => RaiseChanged();
+            _dte.Events.WindowEvents.WindowActivated += (focus, lostFocus) => raiseChanged();
+        }
+        public void SaveAll()
+        {
+            try {
+                if (!shouldSaveActiveDocument()) {
+                    return;
+                }
+
+                foreach (Document item in _dte.Documents.Cast<Document>().Where(item => !item.Saved)) {
+                    item.Save();
+                }
+            } catch (Exception ex) {
+                this.Log().WarnException("Failed to save all documents", ex);
+            }
+        }
+
+        public void TextViewCreated(IWpfTextView textView)
+        {
+            _openTextViewList.Add(textView);
+            var textBuffer = textView.TextBuffer;
+            textBuffer.Changed += onTextBufferChanged;
+            textView.Closed += (sender, e) => {
+                textBuffer.Changed -= onTextBufferChanged;
+                _openTextViewList.Remove(textView);
+            };
+        }
+
+        public int OnAfterAttributeChange(uint docCookie, uint grfAttribs)
+        {
+            uint target = (uint)(__VSRDTATTRIB.RDTA_DocDataIsDirty);
+            if (0 != (target & grfAttribs)) {
+                raiseChanged();
+            }
+
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterDocumentWindowHide(uint docCookie, IVsWindowFrame vsWindowFrame)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterFirstDocumentLock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterSave(uint docCookie)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeDocumentWindowShow(uint docCookie, int fFirstShow, IVsWindowFrame vsWindowFrame)
+        {
+            checkSubscribe(vsWindowFrame);
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeLastDocumentUnlock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
+        {
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterAttributeChangeEx(uint docCookie, uint grfAttribs, IVsHierarchy pHierOld, uint itemidOld, string pszMkDocumentOld, IVsHierarchy pHierNew, uint itemidNew, string pszMkDocumentNew)
+        {
+            uint target = (uint)(__VSRDTATTRIB.RDTA_DocDataIsDirty);
+            if (0 != (target & grfAttribs)) {
+                raiseChanged();
+            }
+
+            return VSConstants.S_OK;
+        }
+
+        bool shouldSaveActiveDocument()
+        {
+            string name = _dte.ActiveDocument.FullName;
+
+            if (name.EndsWith("resx", StringComparison.InvariantCulture)) {
+                return false;
+            }
+
+            if (_sessionDocumentsLookup.Contains(name)) {
+                return true;
+            }
+
+            if (_dte.Solution.GetProjectItemPaths().Contains(name)) {
+                _sessionDocumentsLookup.Add(name);
+                return true;
+            }
+
+            return false;
+        }
+
+        bool isCompletionActive()
+        {
+            return _openTextViewList.Any(x => _completionBroker.IsCompletionActive(x));
         }
 
         /// <summary>
@@ -128,20 +180,20 @@ namespace SaveAllTheTime
         /// This problem does not exist for IWpfTextView instances.  This type implements IWpfTextViewCreationListener
         /// and hence will be around for every single IWpfTextView that is created. 
         /// </summary>
-        void CheckAlreadyOpenDocuments(SVsServiceProvider vsServiceProvider)
+        void checkAlreadyOpenDocuments(SVsServiceProvider vsServiceProvider)
         {
             var vsShell = (IVsUIShell)vsServiceProvider.GetService(typeof(SVsUIShell));
             var vsWindowFrames = vsShell.GetDocumentWindowFrames();
             foreach (var vsWindowFrame in vsWindowFrames) {
-                CheckSubscribe(vsWindowFrame);
+                checkSubscribe(vsWindowFrame);
             }
 
             if (vsWindowFrames.Count > 0) {
-                RaiseChanged();
+                raiseChanged();
             }
         }
 
-        void CheckSubscribe(IVsWindowFrame vsWindowFrame)
+        void checkSubscribe(IVsWindowFrame vsWindowFrame)
         {
             if (_vsWindowFrameSet.Contains(vsWindowFrame)) {
                 return;
@@ -167,11 +219,11 @@ namespace SaveAllTheTime
                 return;
             }
 
-            notifyPropertyChanged.PropertyChanged += OnNotifyPropertyChanged;
+            notifyPropertyChanged.PropertyChanged += onNotifyPropertyChanged;
             _vsWindowFrameSet.Add(vsWindowFrame);
         }
 
-        void RaiseChanged()
+        void raiseChanged()
         {
             var changed = _changed;
             if (changed != null) {
@@ -179,23 +231,23 @@ namespace SaveAllTheTime
             }
         }
 
-        void OnTextBufferChanged(object sender, EventArgs e)
+        void onTextBufferChanged(object sender, EventArgs e)
         {
-            RaiseChanged();
+            raiseChanged();
         }
 
-        void OnNotifyPropertyChanged(object sender, PropertyChangedEventArgs e)
+        void onNotifyPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == "DocumentIsDirty") {
-                RaiseChanged();
+                raiseChanged();
             }
         }
 
-        void OnVsWindowFrameClosed(IVsWindowFrame vsWindowFrame, uint cookie)
+        void onVsWindowFrameClosed(IVsWindowFrame vsWindowFrame, uint cookie)
         {
             var notifyPropertyChanged = vsWindowFrame as INotifyPropertyChanged;
             if (notifyPropertyChanged != null) {
-                notifyPropertyChanged.PropertyChanged -= OnNotifyPropertyChanged;
+                notifyPropertyChanged.PropertyChanged -= onNotifyPropertyChanged;
             }
 
             var vsWindowFrame2 = vsWindowFrame as IVsWindowFrame2;
@@ -206,101 +258,48 @@ namespace SaveAllTheTime
             _vsWindowFrameSet.Remove(vsWindowFrame);
         }
 
-        bool IsCompletionActive()
+        /// <summary>
+        /// The IVsWindowFrameNotify interfaces don't provide the IVsWindowFrame instance on which the events
+        /// are being raised.  This type allows us to pair the events with the instance in question 
+        /// </summary>
+        sealed class VsWindowFrameMonitor : IVsWindowFrameNotify, IVsWindowFrameNotify2
         {
-            return _openTextViewList.Any(x => _completionBroker.IsCompletionActive(x));
-        }
+            readonly DocumentMonitorService _documentMonitorService;
+            readonly IVsWindowFrame _vsWindowFrame;
 
-        public void SaveAll()
-        {
-            try {
-                if (!ShouldSaveActiveDocument()) {
-                    return;
-                }
+            internal uint Cookie;
 
-                foreach (Document item in _dte.Documents.Cast<Document>().Where(item => !item.Saved)) {
-                    item.Save();
-                }
-            } catch (Exception ex) {
-                this.Log().WarnException("Failed to save all documents", ex);
-            }
-        }
-
-        public void TextViewCreated(IWpfTextView textView)
-        {
-            _openTextViewList.Add(textView);
-            var textBuffer = textView.TextBuffer;
-            textBuffer.Changed += OnTextBufferChanged;
-            textView.Closed += (sender, e) => {
-                textBuffer.Changed -= OnTextBufferChanged;
-                _openTextViewList.Remove(textView);
-            };
-        }
-
-        public int OnAfterAttributeChange(uint docCookie, uint grfAttribs)
-        {
-            uint target = (uint)(__VSRDTATTRIB.RDTA_DocDataIsDirty);
-            if (0 != (target & grfAttribs)) {
-                RaiseChanged();
+            internal VsWindowFrameMonitor(DocumentMonitorService documentMonitorService, IVsWindowFrame vsWindowFrame)
+            {
+                _documentMonitorService = documentMonitorService;
+                _vsWindowFrame = vsWindowFrame;
             }
 
-            return VSConstants.S_OK;
-        }
-
-        public int OnAfterDocumentWindowHide(uint docCookie, IVsWindowFrame vsWindowFrame)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnAfterFirstDocumentLock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnAfterSave(uint docCookie)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnBeforeDocumentWindowShow(uint docCookie, int fFirstShow, IVsWindowFrame vsWindowFrame)
-        {
-            CheckSubscribe(vsWindowFrame);
-            return VSConstants.S_OK;
-        }
-
-        public int OnBeforeLastDocumentUnlock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
-        {
-            return VSConstants.S_OK;
-        }
-
-        public int OnAfterAttributeChangeEx(uint docCookie, uint grfAttribs, IVsHierarchy pHierOld, uint itemidOld, string pszMkDocumentOld, IVsHierarchy pHierNew, uint itemidNew, string pszMkDocumentNew)
-        {
-            uint target = (uint)(__VSRDTATTRIB.RDTA_DocDataIsDirty);
-            if (0 != (target & grfAttribs)) {
-                RaiseChanged();
+            public int OnClose(ref uint pgrfSaveOptions)
+            {
+                _documentMonitorService.onVsWindowFrameClosed(_vsWindowFrame, Cookie);
+                return VSConstants.S_OK;
             }
 
-            return VSConstants.S_OK;
-        }
-
-        bool ShouldSaveActiveDocument()
-        {
-            string name = _dte.ActiveDocument.FullName;
-
-            if (name.EndsWith("resx", StringComparison.InvariantCulture)) {
-                return false;
+            public int OnDockableChange(int fDockable)
+            {
+                return VSConstants.S_OK;
             }
 
-            if (_sessionDocumentsLookup.Contains(name)) {
-                return true;
+            public int OnMove()
+            {
+                return VSConstants.S_OK;
             }
 
-            if (_dte.Solution.GetProjectItemPaths().Contains(name)) {
-                _sessionDocumentsLookup.Add(name);
-                return true;
+            public int OnShow(int fShow)
+            {
+                return VSConstants.S_OK;
             }
 
-            return false;
+            public int OnSize()
+            {
+                return VSConstants.S_OK;
+            }
         }
     }
 }
