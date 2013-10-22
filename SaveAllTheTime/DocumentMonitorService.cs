@@ -17,6 +17,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using ReactiveUI;
 using System.Reactive.Subjects;
+using Microsoft.VisualStudio.Text;
 
 namespace SaveAllTheTime
 {
@@ -237,7 +238,6 @@ namespace SaveAllTheTime
                 return;
             }
 
-            notifyPropertyChanged.PropertyChanged += onNotifyPropertyChanged;
             _vsWindowFrameSet.Add(vsWindowFrame);
         }
 
