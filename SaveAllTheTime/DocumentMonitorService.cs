@@ -16,6 +16,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using ReactiveUI;
+using System.Reactive.Subjects;
 
 namespace SaveAllTheTime
 {
@@ -35,7 +36,7 @@ namespace SaveAllTheTime
         /// This event is raised whenever there is a change in the dirty state of any open document
         /// in the solution.  
         /// </summary>
-        event EventHandler _changed;
+        readonly Subject<Unit> _changed = new Subject<Unit>();
 
         /// <summary>
         /// This is the set of IVsWindowFrame instances for which we are currently monitoring 
@@ -56,24 +57,25 @@ namespace SaveAllTheTime
 
             // NB: Resharper somehow fucks with this event, we need to do as 
             // little as possible in the event handler itself
-            var documentChanged = Observable.FromEventPattern(x => _changed += x, x => _changed -= x)
+            var documentChanged = _changed
                 .ObserveOn(RxApp.TaskpoolScheduler)
                 .Throttle(TimeSpan.FromSeconds(2.0), RxApp.TaskpoolScheduler)
                 .Where(_ => !isCompletionActive())
                 .Select(_ => Unit.Default)
                 .ObserveOn(RxApp.MainThreadScheduler);
 
-            var dispatcher = Dispatcher.CurrentDispatcher;
-            documentChanged.Subscribe(_ => dispatcher.BeginInvoke(new Action(() => SaveAll())));
+            documentChanged.Subscribe(_ => SaveAll());
 
             // NB: We use the message bus here, because we want to effectively
             // merge all of the text change notifications from any document
             MessageBus.Current.RegisterMessageSource(documentChanged, "AnyDocumentChanged");
 
+
             checkAlreadyOpenDocuments(vsServiceProvider);
 
-            _dte.Events.WindowEvents.WindowActivated += (focus, lostFocus) => raiseChanged();
+            _dte.Events.WindowEvents.WindowActivated += (o,e) => _changed.OnNext(Unit.Default);
         }
+
         public void SaveAll()
         {
             try {
@@ -91,11 +93,17 @@ namespace SaveAllTheTime
 
         public void TextViewCreated(IWpfTextView textView)
         {
-            _openTextViewList.Add(textView);
             var textBuffer = textView.TextBuffer;
-            textBuffer.Changed += onTextBufferChanged;
+
+            _openTextViewList.Add(textView);
+
+            var disp = Observable.FromEventPattern<TextContentChangedEventArgs>(x => textBuffer.Changed += x, x => textBuffer.Changed -= x)
+                .Select(_ => Unit.Default)
+                .Multicast(_changed)
+                .Connect();
+
             textView.Closed += (sender, e) => {
-                textBuffer.Changed -= onTextBufferChanged;
+                disp.Dispose();
                 _openTextViewList.Remove(textView);
             };
         }
@@ -103,8 +111,9 @@ namespace SaveAllTheTime
         public int OnAfterAttributeChange(uint docCookie, uint grfAttribs)
         {
             uint target = (uint)(__VSRDTATTRIB.RDTA_DocDataIsDirty);
+
             if (0 != (target & grfAttribs)) {
-                raiseChanged();
+                _changed.OnNext(Unit.Default);
             }
 
             return VSConstants.S_OK;
@@ -139,8 +148,9 @@ namespace SaveAllTheTime
         public int OnAfterAttributeChangeEx(uint docCookie, uint grfAttribs, IVsHierarchy pHierOld, uint itemidOld, string pszMkDocumentOld, IVsHierarchy pHierNew, uint itemidNew, string pszMkDocumentNew)
         {
             uint target = (uint)(__VSRDTATTRIB.RDTA_DocDataIsDirty);
+
             if (0 != (target & grfAttribs)) {
-                raiseChanged();
+                _changed.OnNext(Unit.Default);
             }
 
             return VSConstants.S_OK;
@@ -184,12 +194,13 @@ namespace SaveAllTheTime
         {
             var vsShell = (IVsUIShell)vsServiceProvider.GetService(typeof(SVsUIShell));
             var vsWindowFrames = vsShell.GetDocumentWindowFrames();
+
             foreach (var vsWindowFrame in vsWindowFrames) {
                 checkSubscribe(vsWindowFrame);
             }
 
             if (vsWindowFrames.Count > 0) {
-                raiseChanged();
+                _changed.OnNext(Unit.Default);
             }
         }
 
@@ -210,11 +221,18 @@ namespace SaveAllTheTime
             // potential break though going forward 
             var notifyPropertyChanged = vsWindowFrame as INotifyPropertyChanged;
             var vsWindowFrame2 = vsWindowFrame as IVsWindowFrame2;
+
             if (notifyPropertyChanged == null || vsWindowFrame2 == null) {
                 return;
             }
 
-            var vsWindowFrameMonitor = new VsWindowFrameMonitor(this, vsWindowFrame);
+            var disp = Observable.FromEventPattern<PropertyChangedEventHandler, PropertyChangedEventArgs>(x => notifyPropertyChanged.PropertyChanged += x, x => notifyPropertyChanged.PropertyChanged -= x)
+                .Where(x => x.EventArgs.PropertyName == "DocumentIsDirty")
+                .Select(_ => Unit.Default)
+                .Multicast(_changed)
+                .Connect();
+
+            var vsWindowFrameMonitor = new VsWindowFrameMonitor(this, vsWindowFrame, disp);
             if (!ErrorHandler.Succeeded(vsWindowFrame2.Advise(vsWindowFrameMonitor, out vsWindowFrameMonitor.Cookie))) {
                 return;
             }
@@ -223,33 +241,8 @@ namespace SaveAllTheTime
             _vsWindowFrameSet.Add(vsWindowFrame);
         }
 
-        void raiseChanged()
-        {
-            var changed = _changed;
-            if (changed != null) {
-                changed(this, EventArgs.Empty);
-            }
-        }
-
-        void onTextBufferChanged(object sender, EventArgs e)
-        {
-            raiseChanged();
-        }
-
-        void onNotifyPropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == "DocumentIsDirty") {
-                raiseChanged();
-            }
-        }
-
         void onVsWindowFrameClosed(IVsWindowFrame vsWindowFrame, uint cookie)
         {
-            var notifyPropertyChanged = vsWindowFrame as INotifyPropertyChanged;
-            if (notifyPropertyChanged != null) {
-                notifyPropertyChanged.PropertyChanged -= onNotifyPropertyChanged;
-            }
-
             var vsWindowFrame2 = vsWindowFrame as IVsWindowFrame2;
             if (vsWindowFrame2 != null) {
                 vsWindowFrame2.Unadvise(cookie);
@@ -266,18 +259,21 @@ namespace SaveAllTheTime
         {
             readonly DocumentMonitorService _documentMonitorService;
             readonly IVsWindowFrame _vsWindowFrame;
+            readonly IDisposable _innerDisp;
 
             internal uint Cookie;
 
-            internal VsWindowFrameMonitor(DocumentMonitorService documentMonitorService, IVsWindowFrame vsWindowFrame)
+            internal VsWindowFrameMonitor(DocumentMonitorService documentMonitorService, IVsWindowFrame vsWindowFrame, IDisposable innerDisp)
             {
                 _documentMonitorService = documentMonitorService;
                 _vsWindowFrame = vsWindowFrame;
+                _innerDisp = innerDisp;
             }
 
             public int OnClose(ref uint pgrfSaveOptions)
             {
                 _documentMonitorService.onVsWindowFrameClosed(_vsWindowFrame, Cookie);
+                _innerDisp.Dispose();
                 return VSConstants.S_OK;
             }
 
