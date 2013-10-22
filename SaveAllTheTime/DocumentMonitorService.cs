@@ -124,6 +124,7 @@ namespace SaveAllTheTime
                         // Adjust for whitespace that might already have been 
                         // there, by expanding the range to match the start / ends
                         // of the line.
+                        minMax[1] = Math.Min(minMax[1].Value, textBuffer.CurrentSnapshot.Length);
                         minMax[0] = Math.Min(minMax[0].Value, textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[0].Value).Start.Position);
                         minMax[1] = Math.Max(minMax[1].Value, textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[1].Value).End.Position);
 
