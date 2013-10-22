@@ -18,6 +18,8 @@ using Microsoft.VisualStudio.Utilities;
 using ReactiveUI;
 using System.Reactive.Subjects;
 using Microsoft.VisualStudio.Text;
+using System.Reactive.Disposables;
+using System.Text.RegularExpressions;
 
 namespace SaveAllTheTime
 {
@@ -71,7 +73,6 @@ namespace SaveAllTheTime
             // merge all of the text change notifications from any document
             MessageBus.Current.RegisterMessageSource(documentChanged, "AnyDocumentChanged");
 
-
             checkAlreadyOpenDocuments(vsServiceProvider);
 
             _dte.Events.WindowEvents.WindowActivated += (o,e) => _changed.OnNext(Unit.Default);
@@ -92,16 +93,27 @@ namespace SaveAllTheTime
             }
         }
 
+        static readonly Regex whitespaceRegex = new Regex(@"[ \t]+$", RegexOptions.Compiled);
         public void TextViewCreated(IWpfTextView textView)
         {
             var textBuffer = textView.TextBuffer;
 
             _openTextViewList.Add(textView);
 
-            var disp = Observable.FromEventPattern<TextContentChangedEventArgs>(x => textBuffer.Changed += x, x => textBuffer.Changed -= x)
-                .Select(_ => Unit.Default)
-                .Multicast(_changed)
-                .Connect();
+            var changed = Observable.FromEventPattern<TextContentChangedEventArgs>(x => textBuffer.Changed += x, x => textBuffer.Changed -= x);
+
+            var disp = new CompositeDisposable(
+                changed
+                    .Select(_ => Unit.Default)
+                    .Multicast(_changed)
+                    .Connect(),
+                changed.Buffer(() => changed.Throttle(TimeSpan.FromSeconds(2.0), RxApp.TaskpoolScheduler))
+                    .ObserveOn(RxApp.MainThreadScheduler)
+                    .SelectMany(x => x.SelectMany(y => y.EventArgs.Changes).ToObservable())
+                    .Where(x => whitespaceRegex.IsMatch(x.NewText))
+                    .Subscribe(x => {
+                        textBuffer.Replace(x.NewSpan, whitespaceRegex.Replace(x.NewText, ""));
+                    }));
 
             textView.Closed += (sender, e) => {
                 disp.Dispose();
