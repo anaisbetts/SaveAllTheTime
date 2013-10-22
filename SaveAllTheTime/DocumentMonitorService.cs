@@ -93,7 +93,7 @@ namespace SaveAllTheTime
             }
         }
 
-        static readonly Regex whitespaceRegex = new Regex(@"[ \t]+$", RegexOptions.Compiled);
+        static readonly Regex whitespaceRegex = new Regex(@"[ \t]+$", RegexOptions.Compiled | RegexOptions.Multiline);
         public void TextViewCreated(IWpfTextView textView)
         {
             var textBuffer = textView.TextBuffer;
@@ -109,10 +109,30 @@ namespace SaveAllTheTime
                     .Connect(),
                 changed.Buffer(() => changed.Throttle(TimeSpan.FromSeconds(2.0), RxApp.TaskpoolScheduler))
                     .ObserveOn(RxApp.MainThreadScheduler)
-                    .SelectMany(x => x.SelectMany(y => y.EventArgs.Changes).ToObservable())
-                    .Where(x => whitespaceRegex.IsMatch(x.NewText))
                     .Subscribe(x => {
-                        textBuffer.Replace(x.NewSpan, whitespaceRegex.Replace(x.NewText, ""));
+                        // Tracking the changes themselves is Hard, because 
+                        // changes can modify themselves (i.e. you can hit space,
+                        // then backspace). Instead, we're going to try to figure
+                        // out the entire region that has changed, then apply 
+                        // trimming to the entire thing, brute force style.
+                        var minMax = x.SelectMany(y => y.EventArgs.Changes).Aggregate(new int?[2], (acc, y) => {
+                            acc[0] = Math.Min(acc[0] ?? Int32.MaxValue, y.NewSpan.Start);
+                            acc[1] = Math.Max(acc[1] ?? Int32.MinValue, y.NewSpan.End);
+                            return acc;
+                        });
+
+                        // Adjust for whitespace that might already have been 
+                        // there, by expanding the range to match the start / ends
+                        // of the line.
+                        minMax[0] = Math.Min(minMax[0].Value, textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[0].Value).Start.Position);
+                        minMax[1] = Math.Max(minMax[1].Value, textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[1].Value).End.Position);
+
+                        // NB: jaredpar is going to lol at me so hard
+                        var span = textBuffer.CurrentSnapshot.CreateTrackingSpan(minMax[0].Value, minMax[1].Value - minMax[0].Value, SpanTrackingMode.EdgeInclusive).GetSpan(textBuffer.CurrentSnapshot);
+                        var text = textBuffer.CurrentSnapshot.GetText(span);
+
+                        if (!whitespaceRegex.IsMatch(text)) return;
+                        textBuffer.Replace(span, whitespaceRegex.Replace(text, ""));
                     }));
 
             textView.Closed += (sender, e) => {
