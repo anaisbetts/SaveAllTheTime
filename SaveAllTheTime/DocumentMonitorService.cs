@@ -122,7 +122,11 @@ namespace SaveAllTheTime
                             return acc;
                         });
 
-                        // Adjust for whitespace that might already have been 
+                        // NB: I have no idea how this can happen, but it sure 
+                        // does, every time you edit a Razor view
+                        if (!minMax[0].HasValue || !minMax[1].HasValue) return;
+
+                        // Adjust for whitespace that might already have been
                         // there, by expanding the range to match the start / ends
                         // of the line.
                         minMax[1] = Math.Min(minMax[1].Value, textBuffer.CurrentSnapshot.Length);
