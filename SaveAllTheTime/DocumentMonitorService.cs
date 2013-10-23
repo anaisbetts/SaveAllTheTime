@@ -16,6 +16,10 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
 using ReactiveUI;
+using System.Reactive.Subjects;
+using Microsoft.VisualStudio.Text;
+using System.Reactive.Disposables;
+using System.Text.RegularExpressions;
 
 namespace SaveAllTheTime
 {
@@ -25,54 +29,6 @@ namespace SaveAllTheTime
     [TextViewRole(PredefinedTextViewRoles.Document)]
     sealed class DocumentMonitorService : IWpfTextViewCreationListener, IVsRunningDocTableEvents, IVsRunningDocTableEvents2, IVisualStudioOps, IEnableLogger
     {
-        #region VsWindowFrameMonitor 
-
-        /// <summary>
-        /// The IVsWindowFrameNotify interfaces don't provide the IVsWindowFrame instance on which the events
-        /// are being raised.  This type allows us to pair the events with the instance in question 
-        /// </summary>
-        sealed class VsWindowFrameMonitor : IVsWindowFrameNotify, IVsWindowFrameNotify2
-        {
-            readonly DocumentMonitorService _documentMonitorService;
-            readonly IVsWindowFrame _vsWindowFrame;
-
-            internal uint Cookie;
-
-            internal VsWindowFrameMonitor(DocumentMonitorService documentMonitorService, IVsWindowFrame vsWindowFrame)
-            {
-                _documentMonitorService = documentMonitorService;
-                _vsWindowFrame = vsWindowFrame;
-            }
-
-            public int OnClose(ref uint pgrfSaveOptions)
-            {
-                _documentMonitorService.OnVsWindowFrameClosed(_vsWindowFrame, Cookie);
-                return VSConstants.S_OK;
-            }
-
-            public int OnDockableChange(int fDockable)
-            {
-                return VSConstants.S_OK;
-            }
-
-            public int OnMove()
-            {
-                return VSConstants.S_OK;
-            }
-
-            public int OnShow(int fShow)
-            {
-                return VSConstants.S_OK;
-            }
-
-            public int OnSize()
-            {
-                return VSConstants.S_OK;
-            }
-        }
-
-        #endregion
-
         readonly SVsServiceProvider _vsServiceProvider;
         readonly ICompletionBroker _completionBroker;
         readonly RunningDocumentTable _runningDocumentTable;
@@ -83,7 +39,7 @@ namespace SaveAllTheTime
         /// This event is raised whenever there is a change in the dirty state of any open document
         /// in the solution.  
         /// </summary>
-        event EventHandler _changed;
+        readonly Subject<Unit> _changed = new Subject<Unit>();
 
         /// <summary>
         /// This is the set of IVsWindowFrame instances for which we are currently monitoring 
@@ -104,124 +60,37 @@ namespace SaveAllTheTime
 
             // NB: Resharper somehow fucks with this event, we need to do as 
             // little as possible in the event handler itself
-            var documentChanged = Observable.FromEventPattern(x => _changed += x, x => _changed -= x)
+            var documentChanged = _changed
                 .ObserveOn(RxApp.TaskpoolScheduler)
                 .Throttle(TimeSpan.FromSeconds(2.0), RxApp.TaskpoolScheduler)
-                .Where(_ => !IsCompletionActive())
+                .Where(_ => !isCompletionActive())
                 .Select(_ => Unit.Default)
                 .ObserveOn(RxApp.MainThreadScheduler);
 
-            var dispatcher = Dispatcher.CurrentDispatcher;
-            documentChanged.Subscribe(_ => dispatcher.BeginInvoke(new Action(() => SaveAll())));
+            documentChanged.Subscribe(_ => SaveAll());
 
             // NB: We use the message bus here, because we want to effectively
             // merge all of the text change notifications from any document
             MessageBus.Current.RegisterMessageSource(documentChanged, "AnyDocumentChanged");
 
-            CheckAlreadyOpenDocuments(vsServiceProvider);
+            checkAlreadyOpenDocuments(vsServiceProvider);
 
-            _dte.Events.WindowEvents.WindowActivated += (focus, lostFocus) => RaiseChanged();
+            _dte.Events.WindowEvents.WindowActivated += (o,e) => _changed.OnNext(Unit.Default);
         }
-
-        /// <summary>
-        /// It is possible that this class is created after documents are already open in the solution.  This 
-        /// means we won't get the show / opened events until the user once again brings them back into 
-        /// focus.  Hence do a quick search of the open IVsWindowFrame instances and setup the event listening
-        /// on them.
-        /// 
-        /// This problem does not exist for IWpfTextView instances.  This type implements IWpfTextViewCreationListener
-        /// and hence will be around for every single IWpfTextView that is created. 
-        /// </summary>
-        void CheckAlreadyOpenDocuments(SVsServiceProvider vsServiceProvider)
-        {
-            var vsShell = (IVsUIShell)vsServiceProvider.GetService(typeof(SVsUIShell));
-            var vsWindowFrames = vsShell.GetDocumentWindowFrames();
-            foreach (var vsWindowFrame in vsWindowFrames) {
-                CheckSubscribe(vsWindowFrame);
-            }
-
-            if (vsWindowFrames.Count > 0) {
-                RaiseChanged();
-            }
-        }
-
-        void CheckSubscribe(IVsWindowFrame vsWindowFrame)
-        {
-            if (_vsWindowFrameSet.Contains(vsWindowFrame)) {
-                return;
-            }
-
-            // Even though project files are in the running document table events about their dirty state are not always 
-            // properly raised by Visual Studio.  In particular when they are modified via the project property 
-            // designer (aka application designer).  However these IVsWindowFrame implementations do implement the 
-            // INotifyPropertyChanged interface and we can hook into the IsDocumentDirty property instead
-            //
-            // This is an implementation detail of IVsWindowFrame (specifically WindowFrame inside the DLL 
-            // Microsoft.VisualStudio.Platform.WindowManagement).  Hence it can change from version to version of 
-            // Visual Studio.  But this is the behavior in 2010+ and unlikely to change.  Need to be aware of these
-            // potential break though going forward 
-            var notifyPropertyChanged = vsWindowFrame as INotifyPropertyChanged;
-            var vsWindowFrame2 = vsWindowFrame as IVsWindowFrame2;
-            if (notifyPropertyChanged == null || vsWindowFrame2 == null) {
-                return;
-            }
-
-            var vsWindowFrameMonitor = new VsWindowFrameMonitor(this, vsWindowFrame);
-            if (!ErrorHandler.Succeeded(vsWindowFrame2.Advise(vsWindowFrameMonitor, out vsWindowFrameMonitor.Cookie))) {
-                return;
-            }
-
-            notifyPropertyChanged.PropertyChanged += OnNotifyPropertyChanged;
-            _vsWindowFrameSet.Add(vsWindowFrame);
-        }
-
-        void RaiseChanged()
-        {
-            var changed = _changed;
-            if (changed != null) {
-                changed(this, EventArgs.Empty);
-            }
-        }
-
-        void OnTextBufferChanged(object sender, EventArgs e)
-        {
-            RaiseChanged();
-        }
-
-        void OnNotifyPropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == "DocumentIsDirty") {
-                RaiseChanged();
-            }
-        }
-
-        void OnVsWindowFrameClosed(IVsWindowFrame vsWindowFrame, uint cookie)
-        {
-            var notifyPropertyChanged = vsWindowFrame as INotifyPropertyChanged;
-            if (notifyPropertyChanged != null) {
-                notifyPropertyChanged.PropertyChanged -= OnNotifyPropertyChanged;
-            }
-
-            var vsWindowFrame2 = vsWindowFrame as IVsWindowFrame2;
-            if (vsWindowFrame2 != null) {
-                vsWindowFrame2.Unadvise(cookie);
-            }
-
-            _vsWindowFrameSet.Remove(vsWindowFrame);
-        }
-
-        bool IsCompletionActive()
-        {
-            return _openTextViewList.Any(x => _completionBroker.IsCompletionActive(x));
-        }
-
-        #region IVisualStudioOps
 
         public void SaveAll()
         {
             try {
-                if (!ShouldSaveActiveDocument()) {
+                if (!shouldSaveActiveDocument()) {
                     return;
+                }
+
+                if (!_dte.Solution.Saved) {
+                    _dte.Solution.SaveAs(_dte.Solution.FullName);
+                }
+
+                foreach (Project project in _dte.Solution.Projects.Cast<Project>().Where(proj => !proj.Saved)) {
+                    project.Save(); 
                 }
 
                 foreach (Document item in _dte.Documents.Cast<Document>().Where(item => !item.Saved)) {
@@ -232,30 +101,81 @@ namespace SaveAllTheTime
             }
         }
 
-        #endregion
-
-        #region IWpfTextViewCreationListener
-
+        static readonly Regex whitespaceRegex = new Regex(@"[ \t]+$", RegexOptions.Compiled | RegexOptions.Multiline);
         public void TextViewCreated(IWpfTextView textView)
         {
-            _openTextViewList.Add(textView);
             var textBuffer = textView.TextBuffer;
-            textBuffer.Changed += OnTextBufferChanged;
+
+            _openTextViewList.Add(textView);
+
+            var changed = Observable.FromEventPattern<TextContentChangedEventArgs>(x => textBuffer.Changed += x, x => textBuffer.Changed -= x);
+
+            var disp = new CompositeDisposable(
+                changed
+                    .Select(_ => Unit.Default)
+                    .Multicast(_changed)
+                    .Connect(),
+                changed.Buffer(() => changed.Throttle(TimeSpan.FromSeconds(2.0), RxApp.TaskpoolScheduler))
+                    .ObserveOn(RxApp.MainThreadScheduler)
+                    .TakeWhile(_ => textBuffer.CheckEditAccess()) // NB: Kill this if we can't access from the main thread
+                    .Subscribe(x => {
+                        // Tracking the changes themselves is Hard, because 
+                        // changes can modify themselves (i.e. you can hit space,
+                        // then backspace). Instead, we're going to try to figure
+                        // out the entire region that has changed, then apply 
+                        // trimming to the entire thing, brute force style.
+                        var changesWithArgs = x.SelectMany(y => 
+                            y.EventArgs.Changes.Select(z => new { Change = z, EventArgs = y.EventArgs }));
+
+                        var minMax = changesWithArgs.Aggregate(new int?[2], (acc, y) => {
+                            var smallestInThisChange = Math.Min(y.Change.NewSpan.Start, y.EventArgs.After.GetLineFromPosition(y.Change.NewSpan.Start).Start.Position);
+                            var largestInThisChange = Math.Max(y.Change.NewSpan.End, y.EventArgs.After.GetLineFromPosition(y.Change.NewSpan.End).End.Position);
+
+                            acc[0] = Math.Min(acc[0] ?? Int32.MaxValue, smallestInThisChange);
+                            acc[1] = Math.Max(acc[1] ?? Int32.MinValue, largestInThisChange);
+
+                            if (y.Change.LineCountDelta > 0) {
+                                acc[1] = acc[1].Value + y.Change.LineCountDelta;
+                            }
+
+                            return acc;
+                        });
+
+                        // NB: I have no idea how this can happen, but it sure 
+                        // does, every time you edit a Razor view
+                        if (!minMax[0].HasValue || !minMax[1].HasValue) return;
+
+                        // Make triple sure we don't run off the end of the buffer
+                        minMax[1] = Math.Min(minMax[1].Value, textBuffer.CurrentSnapshot.Length);
+
+                        // NB: Sometimes, Visual Studio decides to submit the 
+                        // entire document as a "Change" when it really isn't.
+                        // We're going to ignore this case even though sometimes
+                        // it's actually legit (i.e. if the user pastes in the
+                        // entire file).
+                        if ((double)(minMax[1].Value - minMax[0].Value) / (double)textBuffer.CurrentSnapshot.Length > 0.9) {
+                            return;
+                        }
+
+                        var span = textBuffer.CurrentSnapshot.CreateTrackingSpan(minMax[0].Value, minMax[1].Value - minMax[0].Value, SpanTrackingMode.EdgeInclusive).GetSpan(textBuffer.CurrentSnapshot);
+                        var text = textBuffer.CurrentSnapshot.GetText(span);
+
+                        if (!whitespaceRegex.IsMatch(text)) return;
+                        textBuffer.Replace(span, whitespaceRegex.Replace(text, ""));
+                    }));
+
             textView.Closed += (sender, e) => {
-                textBuffer.Changed -= OnTextBufferChanged;
+                disp.Dispose();
                 _openTextViewList.Remove(textView);
             };
         }
 
-        #endregion
-
-        #region IVsRunningDocTableEvents
-
         public int OnAfterAttributeChange(uint docCookie, uint grfAttribs)
         {
             uint target = (uint)(__VSRDTATTRIB.RDTA_DocDataIsDirty);
+
             if (0 != (target & grfAttribs)) {
-                RaiseChanged();
+                _changed.OnNext(Unit.Default);
             }
 
             return VSConstants.S_OK;
@@ -278,7 +198,7 @@ namespace SaveAllTheTime
 
         public int OnBeforeDocumentWindowShow(uint docCookie, int fFirstShow, IVsWindowFrame vsWindowFrame)
         {
-            CheckSubscribe(vsWindowFrame);
+            checkSubscribe(vsWindowFrame);
             return VSConstants.S_OK;
         }
 
@@ -287,23 +207,18 @@ namespace SaveAllTheTime
             return VSConstants.S_OK;
         }
 
-        #endregion
-
-        #region IVsRunningDocTableEvents
-
         public int OnAfterAttributeChangeEx(uint docCookie, uint grfAttribs, IVsHierarchy pHierOld, uint itemidOld, string pszMkDocumentOld, IVsHierarchy pHierNew, uint itemidNew, string pszMkDocumentNew)
         {
             uint target = (uint)(__VSRDTATTRIB.RDTA_DocDataIsDirty);
+
             if (0 != (target & grfAttribs)) {
-                RaiseChanged();
+                _changed.OnNext(Unit.Default);
             }
 
             return VSConstants.S_OK;
         }
 
-        #endregion
-
-        bool ShouldSaveActiveDocument()
+        bool shouldSaveActiveDocument()
         {
             string name = _dte.ActiveDocument.FullName;
 
@@ -311,7 +226,7 @@ namespace SaveAllTheTime
                 return false;
             }
 
-            if (_sessionDocumentsLookup.Contains(name)) {
+            if (_sessionDocumentsLookup.Contains(name) || name.EndsWith("sln", StringComparison.InvariantCulture) || name.EndsWith("proj", StringComparison.InvariantCulture)) {
                 return true;
             }
 
@@ -321,6 +236,127 @@ namespace SaveAllTheTime
             }
 
             return false;
+        }
+
+        bool isCompletionActive()
+        {
+            return _openTextViewList.Any(x => _completionBroker.IsCompletionActive(x));
+        }
+
+        /// <summary>
+        /// It is possible that this class is created after documents are already open in the solution.  This 
+        /// means we won't get the show / opened events until the user once again brings them back into 
+        /// focus.  Hence do a quick search of the open IVsWindowFrame instances and setup the event listening
+        /// on them.
+        /// 
+        /// This problem does not exist for IWpfTextView instances.  This type implements IWpfTextViewCreationListener
+        /// and hence will be around for every single IWpfTextView that is created. 
+        /// </summary>
+        void checkAlreadyOpenDocuments(SVsServiceProvider vsServiceProvider)
+        {
+            var vsShell = (IVsUIShell)vsServiceProvider.GetService(typeof(SVsUIShell));
+            var vsWindowFrames = vsShell.GetDocumentWindowFrames();
+
+            foreach (var vsWindowFrame in vsWindowFrames) {
+                checkSubscribe(vsWindowFrame);
+            }
+
+            if (vsWindowFrames.Count > 0) {
+                _changed.OnNext(Unit.Default);
+            }
+        }
+
+        void checkSubscribe(IVsWindowFrame vsWindowFrame)
+        {
+            if (_vsWindowFrameSet.Contains(vsWindowFrame)) {
+                return;
+            }
+
+            // Even though project files are in the running document table events about their dirty state are not always 
+            // properly raised by Visual Studio.  In particular when they are modified via the project property 
+            // designer (aka application designer).  However these IVsWindowFrame implementations do implement the 
+            // INotifyPropertyChanged interface and we can hook into the IsDocumentDirty property instead
+            //
+            // This is an implementation detail of IVsWindowFrame (specifically WindowFrame inside the DLL 
+            // Microsoft.VisualStudio.Platform.WindowManagement).  Hence it can change from version to version of 
+            // Visual Studio.  But this is the behavior in 2010+ and unlikely to change.  Need to be aware of these
+            // potential break though going forward 
+            var notifyPropertyChanged = vsWindowFrame as INotifyPropertyChanged;
+            var vsWindowFrame2 = vsWindowFrame as IVsWindowFrame2;
+
+            if (notifyPropertyChanged == null || vsWindowFrame2 == null) {
+                return;
+            }
+
+            var disp = Observable.FromEventPattern<PropertyChangedEventHandler, PropertyChangedEventArgs>(x => notifyPropertyChanged.PropertyChanged += x, x => notifyPropertyChanged.PropertyChanged -= x)
+                .Where(x => x.EventArgs.PropertyName == "DocumentIsDirty")
+                .Select(_ => Unit.Default)
+                .Multicast(_changed)
+                .Connect();
+
+            var vsWindowFrameMonitor = new VsWindowFrameMonitor(this, vsWindowFrame, disp);
+            if (!ErrorHandler.Succeeded(vsWindowFrame2.Advise(vsWindowFrameMonitor, out vsWindowFrameMonitor.Cookie))) {
+                return;
+            }
+
+            _vsWindowFrameSet.Add(vsWindowFrame);
+        }
+
+        void onVsWindowFrameClosed(IVsWindowFrame vsWindowFrame, uint cookie)
+        {
+            var vsWindowFrame2 = vsWindowFrame as IVsWindowFrame2;
+            if (vsWindowFrame2 != null) {
+                vsWindowFrame2.Unadvise(cookie);
+            }
+
+            _vsWindowFrameSet.Remove(vsWindowFrame);
+        }
+
+        /// <summary>
+        /// The IVsWindowFrameNotify interfaces don't provide the IVsWindowFrame instance on which the events
+        /// are being raised.  This type allows us to pair the events with the instance in question 
+        /// </summary>
+        sealed class VsWindowFrameMonitor : IVsWindowFrameNotify, IVsWindowFrameNotify2
+        {
+            readonly DocumentMonitorService _documentMonitorService;
+            readonly IVsWindowFrame _vsWindowFrame;
+            readonly IDisposable _innerDisp;
+
+            internal uint Cookie;
+
+            internal VsWindowFrameMonitor(DocumentMonitorService documentMonitorService, IVsWindowFrame vsWindowFrame, IDisposable innerDisp)
+            {
+                _documentMonitorService = documentMonitorService;
+                _vsWindowFrame = vsWindowFrame;
+                _innerDisp = innerDisp;
+            }
+
+            public int OnClose(ref uint pgrfSaveOptions)
+            {
+                _documentMonitorService.onVsWindowFrameClosed(_vsWindowFrame, Cookie);
+                _innerDisp.Dispose();
+                return VSConstants.S_OK;
+            }
+
+            public int OnDockableChange(int fDockable)
+            {
+                return VSConstants.S_OK;
+            }
+
+            public int OnMove()
+            {
+                return VSConstants.S_OK;
+            }
+
+            public int OnShow(int fShow)
+            {
+                return VSConstants.S_OK;
+            }
+
+            public int OnSize()
+            {
+                return VSConstants.S_OK;
+            }
         }
     }
 }
