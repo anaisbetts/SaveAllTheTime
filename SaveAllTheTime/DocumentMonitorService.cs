@@ -124,9 +124,20 @@ namespace SaveAllTheTime
                         // then backspace). Instead, we're going to try to figure
                         // out the entire region that has changed, then apply 
                         // trimming to the entire thing, brute force style.
-                        var minMax = x.SelectMany(y => y.EventArgs.Changes).Aggregate(new int?[2], (acc, y) => {
-                            acc[0] = Math.Min(acc[0] ?? Int32.MaxValue, y.NewSpan.Start);
-                            acc[1] = Math.Max(acc[1] ?? Int32.MinValue, y.NewSpan.End);
+                        var changesWithArgs = x.SelectMany(y => 
+                            y.EventArgs.Changes.Select(z => new { Change = z, EventArgs = y.EventArgs }));
+
+                        var minMax = changesWithArgs.Aggregate(new int?[2], (acc, y) => {
+                            var smallestInThisChange = Math.Min(y.Change.NewSpan.Start, y.EventArgs.After.GetLineFromPosition(y.Change.NewSpan.Start).Start.Position);
+                            var largestInThisChange = Math.Max(y.Change.NewSpan.End, y.EventArgs.After.GetLineFromPosition(y.Change.NewSpan.End).End.Position);
+
+                            acc[0] = Math.Min(acc[0] ?? Int32.MaxValue, smallestInThisChange);
+                            acc[1] = Math.Max(acc[1] ?? Int32.MinValue, largestInThisChange);
+
+                            if (y.Change.LineCountDelta > 0) {
+                                acc[1] = acc[1].Value + y.Change.LineCountDelta;
+                            }
+
                             return acc;
                         });
 
@@ -134,12 +145,8 @@ namespace SaveAllTheTime
                         // does, every time you edit a Razor view
                         if (!minMax[0].HasValue || !minMax[1].HasValue) return;
 
-                        // Adjust for whitespace that might already have been
-                        // there, by expanding the range to match the start / ends
-                        // of the line.
+                        // Make triple sure we don't run off the end of the buffer
                         minMax[1] = Math.Min(minMax[1].Value, textBuffer.CurrentSnapshot.Length);
-                        minMax[0] = textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[0].Value).Start.Position;
-                        minMax[1] = textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[1].Value).End.Position;
 
                         // NB: Sometimes, Visual Studio decides to submit the 
                         // entire document as a "Change" when it really isn't.
