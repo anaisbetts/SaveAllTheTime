@@ -109,6 +109,7 @@ namespace SaveAllTheTime
                     .Connect(),
                 changed.Buffer(() => changed.Throttle(TimeSpan.FromSeconds(2.0), RxApp.TaskpoolScheduler))
                     .ObserveOn(RxApp.MainThreadScheduler)
+                    .TakeWhile(_ => textBuffer.CheckEditAccess()) // NB: Kill this if we can't access from the main thread
                     .Subscribe(x => {
                         // Tracking the changes themselves is Hard, because 
                         // changes can modify themselves (i.e. you can hit space,
@@ -125,10 +126,9 @@ namespace SaveAllTheTime
                         // there, by expanding the range to match the start / ends
                         // of the line.
                         minMax[1] = Math.Min(minMax[1].Value, textBuffer.CurrentSnapshot.Length);
-                        minMax[0] = Math.Min(minMax[0].Value, textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[0].Value).Start.Position);
-                        minMax[1] = Math.Max(minMax[1].Value, textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[1].Value).End.Position);
+                        minMax[0] = textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[0].Value).Start.Position;
+                        minMax[1] = textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[1].Value).End.Position;
 
-                        // NB: jaredpar is going to lol at me so hard
                         var span = textBuffer.CurrentSnapshot.CreateTrackingSpan(minMax[0].Value, minMax[1].Value - minMax[0].Value, SpanTrackingMode.EdgeInclusive).GetSpan(textBuffer.CurrentSnapshot);
                         var text = textBuffer.CurrentSnapshot.GetText(span);
 
