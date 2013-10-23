@@ -85,6 +85,14 @@ namespace SaveAllTheTime
                     return;
                 }
 
+                if (!_dte.Solution.Saved) {
+                    _dte.Solution.SaveAs(_dte.Solution.FullName);
+                }
+
+                foreach (Project project in _dte.Solution.Projects.Cast<Project>().Where(proj => !proj.Saved)) {
+                    project.Save(); 
+                }
+
                 foreach (Document item in _dte.Documents.Cast<Document>().Where(item => !item.Saved)) {
                     item.Save();
                 }
@@ -211,7 +219,7 @@ namespace SaveAllTheTime
                 return false;
             }
 
-            if (_sessionDocumentsLookup.Contains(name)) {
+            if (_sessionDocumentsLookup.Contains(name) || name.EndsWith("sln", StringComparison.InvariantCulture) || name.EndsWith("proj", StringComparison.InvariantCulture)) {
                 return true;
             }
 
