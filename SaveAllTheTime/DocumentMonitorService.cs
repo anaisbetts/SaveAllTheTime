@@ -133,6 +133,15 @@ namespace SaveAllTheTime
                         minMax[0] = textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[0].Value).Start.Position;
                         minMax[1] = textBuffer.CurrentSnapshot.GetLineFromPosition(minMax[1].Value).End.Position;
 
+                        // NB: Sometimes, Visual Studio decides to submit the 
+                        // entire document as a "Change" when it really isn't.
+                        // We're going to ignore this case even though sometimes
+                        // it's actually legit (i.e. if the user pastes in the
+                        // entire file).
+                        if ((double)(minMax[1].Value - minMax[0].Value) / (double)textBuffer.CurrentSnapshot.Length > 0.9) {
+                            return;
+                        }
+
                         var span = textBuffer.CurrentSnapshot.CreateTrackingSpan(minMax[0].Value, minMax[1].Value - minMax[0].Value, SpanTrackingMode.EdgeInclusive).GetSpan(textBuffer.CurrentSnapshot);
                         var text = textBuffer.CurrentSnapshot.GetText(span);
 
