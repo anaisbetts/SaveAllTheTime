@@ -110,6 +110,13 @@ namespace SaveAllTheTime
 
             var changed = Observable.FromEventPattern<TextContentChangedEventArgs>(x => textBuffer.Changed += x, x => textBuffer.Changed -= x);
 
+            var disp = changed
+                .Select(_ => Unit.Default)
+                .Multicast(_changed)
+                .Connect();
+
+#if FALSE
+            // NB: This feature is too fucked right now
             var disp = new CompositeDisposable(
                 changed
                     .Select(_ => Unit.Default)
@@ -163,6 +170,7 @@ namespace SaveAllTheTime
                         if (!whitespaceRegex.IsMatch(text)) return;
                         textBuffer.Replace(span, whitespaceRegex.Replace(text, ""));
                     }));
+#endif
 
             textView.Closed += (sender, e) => {
                 disp.Dispose();
