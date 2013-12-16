@@ -21,10 +21,12 @@ using ReactiveUI.Xaml;
 
 namespace SaveAllTheTime.Views
 {
+    using System.Reactive.Concurrency;
+
     /// <summary>
     /// Interaction logic for CommitHintView.xaml
     /// </summary>
-    public partial class CommitHintView : UserControl, IViewFor<CommitHintViewModel>
+    public partial class CommitHintView : UserControl, IViewFor<CommitHintViewModel>, IEnableLogger
     {
         public CommitHintView()
         {
@@ -38,12 +40,12 @@ namespace SaveAllTheTime.Views
 
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
                 .Throttle(TimeSpan.FromMilliseconds(500), RxApp.MainThreadScheduler)
-                .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
+                .Subscribe(applyElementVisualState);
 
             this.WhenAnyObservable(x => x.ViewModel.RefreshStatus.ItemsInflight)
                 .Select(x => x != 0 ? "Loading" : "NotLoading")
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
+                .Subscribe(applyElementVisualState);
 
             this.BindCommand(ViewModel, x => x.Open, x => x.Open);
 
@@ -59,17 +61,18 @@ namespace SaveAllTheTime.Views
 
             this.WhenAny(x => x.ViewModel.SuggestedOpacity, x => x.Value)
                 .Select(x => x + 0.25)
+                .ObserveOn(RxApp.MainThreadScheduler)
                 .BindTo(this, x => x.visualRoot.Opacity);
 
             this.WhenAny(x => x.IsMouseOver, x => x.Value ? "Hover" : "NoHover")
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
+                .Subscribe(applyElementVisualState);
 
             this.WhenAnyObservable(
                     x => x.ViewModel.RefreshLastCommitTime.ThrownExceptions,
                     x => x.ViewModel.RefreshStatus.ThrownExceptions)
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ => VisualStateManager.GoToElementState(visualRoot, "Error", true));
+                .Subscribe(_ => applyElementVisualState("Error"));
 
             Observable.FromEventPattern<MouseButtonEventHandler, MouseButtonEventArgs>(x => visualRoot.PreviewMouseUp += x, x => visualRoot.PreviewMouseUp += x)
                 .Where(x => x.EventArgs.ChangedButton == MouseButton.Right)
@@ -124,6 +127,11 @@ namespace SaveAllTheTime.Views
         object IViewFor.ViewModel {
             get { return ViewModel; }
             set { ViewModel = (CommitHintViewModel)value; }
+        }
+
+        void applyElementVisualState(string state)
+        {
+            Dispatcher.BeginInvoke(new Action(() => VisualStateManager.GoToElementState(visualRoot, state, true)));
         }
     }
 }
