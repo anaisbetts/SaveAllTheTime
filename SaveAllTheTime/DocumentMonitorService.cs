@@ -228,9 +228,9 @@ namespace SaveAllTheTime
 
         bool shouldSaveActiveDocument()
         {
-            string name = _dte.ActiveDocument.FullName;
+            string name = _dte.ActiveDocument != null ? _dte.ActiveDocument.FullName : string.Empty;
 
-            if (name.EndsWith("resx", StringComparison.InvariantCulture)) {
+            if (name.EndsWith("resx", StringComparison.InvariantCulture) || string.IsNullOrEmpty(name)) {
                 return false;
             }
 

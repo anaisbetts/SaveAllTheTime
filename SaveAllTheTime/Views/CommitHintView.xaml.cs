@@ -42,6 +42,7 @@ namespace SaveAllTheTime.Views
 
             this.WhenAnyObservable(x => x.ViewModel.RefreshStatus.ItemsInflight)
                 .Select(x => x != 0 ? "Loading" : "NotLoading")
+                .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
 
             this.BindCommand(ViewModel, x => x.Open, x => x.Open);
@@ -61,11 +62,13 @@ namespace SaveAllTheTime.Views
                 .BindTo(this, x => x.visualRoot.Opacity);
 
             this.WhenAny(x => x.IsMouseOver, x => x.Value ? "Hover" : "NoHover")
+                .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
 
             this.WhenAnyObservable(
                     x => x.ViewModel.RefreshLastCommitTime.ThrownExceptions,
                     x => x.ViewModel.RefreshStatus.ThrownExceptions)
+                .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => VisualStateManager.GoToElementState(visualRoot, "Error", true));
 
             Observable.FromEventPattern<MouseButtonEventHandler, MouseButtonEventArgs>(x => visualRoot.PreviewMouseUp += x, x => visualRoot.PreviewMouseUp += x)
