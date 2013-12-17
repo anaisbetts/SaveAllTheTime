@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using EnvDTE;
 using EnvDTE80;
@@ -7,9 +8,6 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace SaveAllTheTime
 {
-    using System;
-    using System.Diagnostics;
-
     internal static class Extensions
     {
         internal static List<IVsWindowFrame> GetDocumentWindowFrames(this IVsUIShell vsShell)

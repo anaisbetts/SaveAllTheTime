@@ -21,12 +21,10 @@ using ReactiveUI.Xaml;
 
 namespace SaveAllTheTime.Views
 {
-    using System.Reactive.Concurrency;
-
     /// <summary>
     /// Interaction logic for CommitHintView.xaml
     /// </summary>
-    public partial class CommitHintView : UserControl, IViewFor<CommitHintViewModel>, IEnableLogger
+    public partial class CommitHintView : UserControl, IViewFor<CommitHintViewModel>
     {
         public CommitHintView()
         {
