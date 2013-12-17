@@ -7,6 +7,9 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace SaveAllTheTime
 {
+    using System;
+    using System.Diagnostics;
+
     internal static class Extensions
     {
         internal static List<IVsWindowFrame> GetDocumentWindowFrames(this IVsUIShell vsShell)
@@ -54,13 +57,18 @@ namespace SaveAllTheTime
             return new HashSet<string>(projectItems);
         }
 
-        static IEnumerable<Project> AllProjects(this Solution solution)
+        internal static IEnumerable<Project> AllProjects(this Solution solution)
         {
             var mainProjects = solution.Projects.Cast<Project>();
             var subProjects = solution.Projects.Cast<Project>().Where(x => x.Kind == ProjectKinds.vsProjectKindSolutionFolder).SolutionFolderProjects();
 
             return mainProjects.Concat(subProjects);
         }
+
+        internal static IEnumerable<Document> AllDocuments(this Documents documents)
+        {
+            return documents.Cast<Document>().Where(x => !x.Path.StartsWith("vstfs://", StringComparison.InvariantCultureIgnoreCase));
+        } 
 
         static IEnumerable<Project> SolutionFolderProjects(this IEnumerable<Project> projects)
         {
