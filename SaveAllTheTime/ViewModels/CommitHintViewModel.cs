@@ -81,8 +81,8 @@ namespace SaveAllTheTime.ViewModels
         public ReactiveCommand Open { get; protected set; }
         public ReactiveCommand HelpMe { get; protected set; }
         public ReactiveCommand GoAway { get; protected set; }
-        public ReactiveAsyncCommand RefreshStatus { get; protected set; }
-        public ReactiveAsyncCommand RefreshLastCommitTime { get; protected set; }
+        public ReactiveCommand RefreshStatus { get; protected set; }
+        public ReactiveCommand RefreshLastCommitTime { get; protected set; }
         public ReactiveCommand ShowTFSGitWarning { get; protected set; }
 
         public CommitHintViewModel(string filePath, IVisualStudioOps vsOps, UserSettings settings = null, IGitRepoOps gitRepoOps = null, IFilesystemWatchCache watchCache = null)
@@ -108,8 +108,8 @@ namespace SaveAllTheTime.ViewModels
 
             Open = new ReactiveCommand(this.WhenAny(x => x.ProtocolUrl, x => !String.IsNullOrWhiteSpace(x.Value)));
             GoAway = new ReactiveCommand();
-            RefreshStatus = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
-            RefreshLastCommitTime = new ReactiveAsyncCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
+            RefreshStatus = new ReactiveCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
+            RefreshLastCommitTime = new ReactiveCommand(this.WhenAny(x => x.RepoPath, x => !String.IsNullOrWhiteSpace(x.Value)));
             ShowTFSGitWarning = new ReactiveCommand();
             HelpMe = new ReactiveCommand();
 
@@ -119,7 +119,7 @@ namespace SaveAllTheTime.ViewModels
                 .Switch()
                 .InvokeCommand(RefreshLastCommitTime);
 
-            RefreshLastCommitTime.RegisterAsyncObservable(_ => _gitRepoOps.LastCommitTime(RepoPath))
+            RefreshLastCommitTime.RegisterAsync(_ => _gitRepoOps.LastCommitTime(RepoPath))
                 .StartWith(_gitRepoOps.ApplicationStartTime)
                 .ToProperty(this, x => x.LastRepoCommitTime, out _LastRepoCommitTime);
 
@@ -147,7 +147,7 @@ namespace SaveAllTheTime.ViewModels
 
             Open.Subscribe(_ => vsOps.SaveAll());
 
-            RefreshStatus.RegisterAsyncObservable(_ => _gitRepoOps.GetStatus(RepoPath))
+            RefreshStatus.RegisterAsync(_ => _gitRepoOps.GetStatus(RepoPath))
                 .ToProperty(this, x => x.LatestRepoStatus, out _LatestRepoStatus);
 
             this.WhenAny(x => x.SuggestedOpacity, x => x.LatestRepoStatus, (opacity, status) => new { Opacity = opacity.Value, Status = status.Value })
