@@ -1,15 +1,13 @@
-﻿using ReactiveUI;
-using System;
-
-namespace SaveAllTheTime.Tests
+﻿/// <summary>
+/// Used by the ModuleInit. All code inside the Initialize method is ran as soon as the assembly is loaded.
+/// </summary>
+public static class ModuleInitializer
 {
-    public static class ModuleInitializer
+    /// <summary>
+    /// Initializes the module.
+    /// </summary>
+    public static void Initialize()
     {
-        public static void Initialize()
-        {
-            // NB: This line actually exists to invoke all of RxUI's static
-            // constructors that set shit up.
-            LogHost.Default.Info("Initializing Test DLL");
-        }
+
     }
 }
