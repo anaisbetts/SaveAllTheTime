@@ -38,11 +38,11 @@ namespace SaveAllTheTime.Views
 
             this.WhenAny(x => x.ViewModel.HintState, x => x.Value.ToString())
                 .Throttle(TimeSpan.FromMilliseconds(500), RxApp.MainThreadScheduler)
-                .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
+                .Subscribe(applyElementVisualState);
 
-            this.WhenAnyObservable(x => x.ViewModel.RefreshStatus.ItemsInflight)
-                .Select(x => x != 0 ? "Loading" : "NotLoading")
-                .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
+            this.WhenAnyObservable(x => x.ViewModel.RefreshStatus.IsExecuting)
+                .Select(x => x != false ? "Loading" : "NotLoading")
+                .Subscribe(applyElementVisualState);
 
             this.BindCommand(ViewModel, x => x.Open, x => x.Open);
 
@@ -61,12 +61,12 @@ namespace SaveAllTheTime.Views
                 .BindTo(this, x => x.visualRoot.Opacity);
 
             this.WhenAny(x => x.IsMouseOver, x => x.Value ? "Hover" : "NoHover")
-                .Subscribe(x => VisualStateManager.GoToElementState(visualRoot, x, true));
+                .Subscribe(applyElementVisualState);
 
             this.WhenAnyObservable(
                     x => x.ViewModel.RefreshLastCommitTime.ThrownExceptions,
                     x => x.ViewModel.RefreshStatus.ThrownExceptions)
-                .Subscribe(_ => VisualStateManager.GoToElementState(visualRoot, "Error", true));
+                .Subscribe(_ => applyElementVisualState("Error"));
 
             Observable.FromEventPattern<MouseButtonEventHandler, MouseButtonEventArgs>(x => visualRoot.PreviewMouseUp += x, x => visualRoot.PreviewMouseUp += x)
                 .Where(x => x.EventArgs.ChangedButton == MouseButton.Right)
@@ -121,6 +121,11 @@ namespace SaveAllTheTime.Views
         object IViewFor.ViewModel {
             get { return ViewModel; }
             set { ViewModel = (CommitHintViewModel)value; }
+        }
+
+        void applyElementVisualState(string state)
+        {
+            VisualStateManager.GoToElementState(visualRoot, state, true);
         }
     }
 }

@@ -1,13 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using EnvDTE;
+using EnvDTE80;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell.Interop;
 
 namespace SaveAllTheTime
 {
-
-
     internal static class Extensions
     {
         internal static List<IVsWindowFrame> GetDocumentWindowFrames(this IVsUIShell vsShell)
@@ -45,21 +45,46 @@ namespace SaveAllTheTime
 
         internal static HashSet<string> GetProjectItemPaths(this Solution solution)
         {
-            HashSet<string> items = new HashSet<string>();
-
-            var toAdd = solution.Projects
-                .Cast<Project>()
+            var projectItems = solution.AllProjects()
                 .SelectMany(x => AllProjectItems(x)
                     .Where(y => y.Properties != null)
                     .Select(y => y.Properties.Item("FullPath"))
                     .Where(z => z.Value != null)
                     .Select(z => z.Value.ToString()));
 
-            foreach (string key in toAdd) {
-                items.Add(key);
-            }
+            return new HashSet<string>(projectItems);
+        }
 
-            return items;
+        internal static IEnumerable<Project> AllProjects(this Solution solution)
+        {
+            var mainProjects = solution.Projects.Cast<Project>();
+            var subProjects = solution.Projects.Cast<Project>().Where(x => x.Kind == ProjectKinds.vsProjectKindSolutionFolder).SolutionFolderProjects();
+
+            return mainProjects.Concat(subProjects);
+        }
+
+        internal static IEnumerable<Document> AllDocuments(this Documents documents)
+        {
+            return documents.Cast<Document>().Where(x => !x.Path.StartsWith("vstfs://", StringComparison.InvariantCultureIgnoreCase));
+        } 
+
+        static IEnumerable<Project> SolutionFolderProjects(this IEnumerable<Project> projects)
+        {
+            return projects
+                .SelectMany(x => 
+                    Enumerable.Range(1, x.ProjectItems.Count)
+                        .Select(y => x.ProjectItems.Item(y).SubProject)
+                        .Where(p => p != null))
+                .SelectMany(x => 
+                    x.Kind == ProjectKinds.vsProjectKindSolutionFolder ? 
+                        x.AsEnumerable().SolutionFolderProjects() : 
+                        x.AsEnumerable()
+                );
+        }
+
+        static IEnumerable<Project> AsEnumerable(this Project project)
+        {
+            yield return project;
         }
 
         static IEnumerable<ProjectItem> AllProjectItems(Project project)

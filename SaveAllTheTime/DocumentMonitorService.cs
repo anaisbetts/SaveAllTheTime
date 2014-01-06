@@ -89,11 +89,11 @@ namespace SaveAllTheTime
                     _dte.Solution.SaveAs(_dte.Solution.FullName);
                 }
 
-                foreach (Project project in _dte.Solution.Projects.Cast<Project>().Where(proj => !proj.Saved)) {
+                foreach (Project project in _dte.Solution.AllProjects().Where(x => !x.Saved)) {
                     project.Save(); 
                 }
 
-                foreach (Document item in _dte.Documents.Cast<Document>().Where(item => !item.Saved)) {
+                foreach (Document item in _dte.Documents.AllDocuments().Where(item => !item.Saved)) {
                     item.Save();
                 }
             } catch (Exception ex) {
@@ -228,13 +228,13 @@ namespace SaveAllTheTime
 
         bool shouldSaveActiveDocument()
         {
-            string name = _dte.ActiveDocument.FullName;
+            string name = _dte.ActiveDocument != null ? _dte.ActiveDocument.FullName : string.Empty;
 
-            if (name.EndsWith("resx", StringComparison.InvariantCulture)) {
+            if (name.EndsWith("resx", StringComparison.InvariantCultureIgnoreCase) || name.StartsWith("vstfs://", StringComparison.InvariantCultureIgnoreCase) || string.IsNullOrEmpty(name)) {
                 return false;
             }
 
-            if (_sessionDocumentsLookup.Contains(name) || name.EndsWith("sln", StringComparison.InvariantCulture) || name.EndsWith("proj", StringComparison.InvariantCulture)) {
+            if (_sessionDocumentsLookup.Contains(name) || name.EndsWith("sln", StringComparison.InvariantCultureIgnoreCase) || name.EndsWith("proj", StringComparison.InvariantCultureIgnoreCase)) {
                 return true;
             }
 
