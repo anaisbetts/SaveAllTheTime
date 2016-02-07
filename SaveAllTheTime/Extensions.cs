@@ -47,7 +47,7 @@ namespace SaveAllTheTime
         {
             var projectItems = solution.AllProjects()
                 .SelectMany(x => AllProjectItems(x)
-                    .Where(y => y.Properties != null)
+                    .Where(y => y.Kind != EnvDTE.Constants.vsProjectItemKindVirtualFolder && y.Properties != null)
                     .Select(y => y.Properties.Item("FullPath"))
                     .Where(z => z.Value != null)
                     .Select(z => z.Value.ToString()));
