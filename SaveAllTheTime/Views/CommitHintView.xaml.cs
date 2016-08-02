@@ -125,7 +125,7 @@ namespace SaveAllTheTime.Views
 
         void applyElementVisualState(string state)
         {
-            VisualStateManager.GoToElementState(visualRoot, state, true);
+            Dispatcher.InvokeAsync(() => VisualStateManager.GoToElementState(visualRoot, state, true));
         }
     }
 }
